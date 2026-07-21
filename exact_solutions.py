@@ -18,16 +18,21 @@ def n_soltion_exact( x, t, n = 3):
     return n *(n+1) * sech_sqrd(x)
 
 # Xiao's exact solution for the forced KdV equation
-def xiao_traveling_forcing_exact( alpha_zg, beta, delta, kappa, b, x, t):
+def xiao_traveling_forcing_exact( alpha_zg, beta, delta, kappa, b, x,
+                                  t):
     """ t = time"""
     wave_const = np.exp(b[2]*(t**2) + b[1]*t + b[0])
-    return ((12*kappa*beta) / alpha_zg) * ( (kappa**3)*(4*beta - delta) - (2*t*b[2] + b[1])*wave_const) * sech_sqrd(kappa * (x - delta * (kappa**2) * t) - wave_const)
+    return (((12*kappa*beta) / alpha_zg)
+            * ( (kappa**3)*(4*beta - delta) - (2*t*b[2] + b[1]) * wave_const )
+            * sech_sqrd(kappa * (x - delta * (kappa**2) * t) - wave_const)
+)
 
 def xiao_traveling_wave_exact( beta, delta, kappa, b, x, t):
     wave_const = np.exp(b[2]*(t**2) + b[1]*t + b[0])
     return (12*beta) * (kappa**2) * sech_sqrd(kappa*(x - delta*(kappa**2)*t) - wave_const)
 
-def xiao_special_forcing_exact(alpha, beta, delta, k, A, b, x, t):
+def xiao_special_forcing_exact(alpha, beta, delta, k, A, b
+                               , x, t):
     """ t = time"""
     _wave_const = b[2]*np.arctan(A*t) + b[1]*t + b[0]
     return ((12*k*beta / alpha)

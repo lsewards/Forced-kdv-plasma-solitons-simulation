@@ -1,10 +1,15 @@
 ## Imports & variables
 import numpy as np
+import importlib
 import pandas as pd
 from functools import partial
 import fkdv_simulation as sim
 import plasma_enviroment as env
 import exact_solutions as exact
+
+importlib.reload(sim)
+importlib.reload(env)
+importlib.reload(exact)
 
 # Global constants
 __kb__ = 1.380649e-23  #Boltzmann constant in J/K
@@ -20,8 +25,8 @@ alpha = 6 # Nonlinearity parameter ( 1.0051)
 beta = 1 # Dispersion parameter (0.4925)
 
 # forcing parameters
-forcing_fn = exact.unforced_kdv_solution
-forcing_args = None
+forcing_fn = exact.xiao_traveling_forcing_exact
+forcing_args = [-2, 1/6, 4, 1, [-1, 2, -1]]
 debris_size = 0.5 # Forcing amplitude in V
 vd = None # Debris velocity in km/s
 np_potential = None  # Normalised plasma potential, if None, it will be automatically calculated.
@@ -29,7 +34,9 @@ G = None  # Normalised forcing width
 
 # simulation intialisation
 mode = "analytical"  # simulation mode: "rest" for starting from rest frame, "analytical" for starting from an exact solution
-exact_wave_fn = exact.n_soltion_exact  # module containing analytical solutions for the KdV equation
+exact_wave_fn = exact.xiao_traveling_wave_exact  # module containing analytical solutions for the KdV equation
+wave_args = [1/6, 4, 1, [-1, 2, -1]]  # arguments for the analytical solution function
+
 stabilising_steps = 1  # number of steps to stabilise the solution at the start of the simulation
 
 # Simulation parameters
@@ -100,10 +107,15 @@ if __name__ == "__main__":
     else:
         loaded_forcing_fn = forcing_fn
 
+    if wave_args:
+        loaded_wave_exact = partial(exact_wave_fn, *wave_args)
+    else:
+        loaded_wave_exact = exact_wave_fn
+
     sol, time_array, x_array = sim.run_simulation(L, N, tau_inital, tau_final, dtau, alpha, beta,
                                             mode=mode,
                                             forcing_fn=loaded_forcing_fn,
-                                            analytical_sol= exact_wave_fn if mode == "analytical" else None,
+                                            analytical_sol= loaded_wave_exact,
                                             stabilising_steps=stabilising_steps,
                                             verbose=verbose,
                                             solver=sim.ck_solver

@@ -49,7 +49,6 @@ def run_simulation(L, N, t_inital, t_final, dt, alpha, beta, mode="rest", analyt
           raise FloatingPointError(
               f"Non-finite solution at time ={current_time:.6g}; "
               f"max |u|={np.max(np.abs(current)):.3e}")
-
         return next
 
     def _stabilization(prev_sol, curr_sol, sim_time, dt):
@@ -99,7 +98,6 @@ def run_simulation(L, N, t_inital, t_final, dt, alpha, beta, mode="rest", analyt
         prev_sol, curr_sol = curr_sol, next_sol
         step += 1
         sim_time += dt
-
     print("Simulation complete.")
     return sol[:recorded_steps], time_array[:recorded_steps], x_array
 
@@ -108,7 +106,6 @@ def get_real_solutions(exact_wave_fn, x_array, time_array):
     real_sol = np.zeros((len(time_array), len(x_array)))
     for i in range(len(time_array)):
         real_sol[i] = exact_wave_fn(x_array, time_array[i])
-
     return real_sol
 
 def find_time_index(time_array, time_tu):
@@ -142,14 +139,14 @@ def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = F
     Xi, Tau = np.meshgrid(x_array, time_array)  # Create meshgrid for plotting
 
     ax = plt.subplot(122, projection='3d')
-    ax.plot_surface(Tau, Xi, sol, rstride=5, cstride=5, cmap='viridis')
-    ax.set_xlabel('t axis')
-    ax.set_ylabel('x axis')
+    ax.plot_surface(Xi, Tau, sol, rstride=5, cstride=5, cmap='viridis')
+    ax.set_xlabel('x axis')
+    ax.set_ylabel('t axis')
     ax.set_zlabel('U axis')
-    if t_lim is not None:
-        ax.set_xlim(t_lim[0], t_lim[1])
     if x_lim is not None:
-        ax.set_ylim(x_lim[0], x_lim[1])
+        ax.set_xlim(x_lim[0], x_lim[1])
+    if t_lim is not None:
+        ax.set_ylim(t_lim[0], t_lim[1])
     if u_lim is not None:
         ax.set_zlim(u_lim[0], u_lim[1])
     ax.view_init(elev=view[0], azim=view[1], roll=view[2])
