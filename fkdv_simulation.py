@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 def ck_solver(prev_sol, curr_sol, f, k, alpha, beta, dt, s = 1.0):
     """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain."""
 
-    k_fs = k[:len(k) // 2 + 1] # slicng k down 1024 (real) = 1024 // 2 + 1 (fourier space )
+    k_fs = k[:len(k) // 2 + 1] # slicing k down 1024 (real) = 1024 // 2 + 1 (fourier space )
 
     # pre-calculating coefficients
     _ck_beta_fs = dt * beta * 1j * (k_fs ** 3) * (s ** 3)
@@ -37,7 +37,7 @@ def fw_solver(prev_sol, curr_sol, f, k, alpha, beta, dt, s = 1.0):
             + dt * s * ifft_f_ik)
 
 ## Running the Simulation
-def run_simulation(L, N, t_inital, t_final, dt, alpha, beta, mode="rest", analytical_sol=None, forcing_fn=None, stabilising_steps=10, verbose=10, solver = ck_solver):
+def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analytical_sol=None, forcing_fn=None, stabilising_steps=10, verbose=10, solver = ck_solver):
     """Runs the simulation for the normalised forced KdV equation using the Crank-Nicolson scheme. The simulation can be run in two modes: 'rest' for starting from rest frame, and 'analyitcal' starting from some exact solution for the kdv equation. The function returns the solution array, time array, and mesh space."""
 
     def _get_next_solution(previous, current, current_time, dt):
@@ -45,7 +45,7 @@ def run_simulation(L, N, t_inital, t_final, dt, alpha, beta, mode="rest", analyt
         f = forcing_fn(x_array, current_time)
         next = solver(previous, current, f, k, alpha, beta, dt)
 
-        if not np.all(np.isfinite(next)): # prevent sim from coninuting after reachin an overflow error
+        if not np.all(np.isfinite(next)): # prevent sim from continuing after reaching an overflow error
           raise FloatingPointError(
               f"Non-finite solution at time ={current_time:.6g}; "
               f"max |u|={np.max(np.abs(current)):.3e}")
@@ -60,15 +60,15 @@ def run_simulation(L, N, t_inital, t_final, dt, alpha, beta, mode="rest", analyt
         #print(f"Stabilisation complete. Time: {sim_time:.2f} TU")
         return initial_sol, curr_sol, sim_time  # The two-level step needs states separated by exactly ``dt``.
 
-    x_array = np.linspace(-L, L, N, endpoint=False) # Defining mesh space & wave numbers
+    x_array = np.linspace(-L, L, N) # Defining mesh space & wave numbers
     k = 2 * np.pi * np.fft.fftfreq(N, d=(x_array[1] - x_array[0]))  # Wave numbers for FFT , d = dx
 
     if mode == "rest":
-        num_allocated_steps = int((abs(t_inital - t_final) // dt + 1 + stabilising_steps) // verbose)
+        num_allocated_steps = int((abs(t_initial - t_final) // dt + 1 + stabilising_steps) // verbose)
     elif mode == "analytical":
         if analytical_sol is None:
             raise ValueError("Analytical solution function must be provided when mode is 'analytical'.")
-        num_allocated_steps = int((abs(t_inital - t_final) // dt + 1 ) // verbose)
+        num_allocated_steps = int((abs((t_initial - t_final) / dt) + 1) // verbose)
     else:
         raise ValueError("Invalid mode. Please choose 'rest' or 'analytical'.")
 
@@ -78,9 +78,9 @@ def run_simulation(L, N, t_inital, t_final, dt, alpha, beta, mode="rest", analyt
 
     step = 1  # Start from the second time step since the first two are already set
     recorded_steps = 0  # Counter for the number of recorded steps
-    sim_time = t_inital  # start
+    sim_time = t_initial  # start
     while sim_time < t_final:
-        if sim_time == t_inital: # Initalising simulation
+        if sim_time == t_initial: # Initialising simulation
             if mode == "rest" :
                 prev_sol, curr_sol, sim_time = _stabilization(np.zeros(N), np.zeros(N), sim_time, dt)  # Stabilise the solution for the first time step
             else:
@@ -108,15 +108,17 @@ def get_real_solutions(exact_wave_fn, x_array, time_array):
         real_sol[i] = exact_wave_fn(x_array, time_array[i])
     return real_sol
 
-def find_time_index(time_array, time_tu):
+def find_time_index(time_array, time_stamp):
     """Return the index of the recorded time closest to ``time_tu``."""
     if len(time_array) == 0:
         raise ValueError("Cannot select a time from an empty simulation result.")
-    index = int(np.argmin(np.abs(time_array - time_tu)))
-    print(f"Index of time step closest to {time_tu} TU: {index}")
+    index = int(np.argmin(np.abs(time_array - time_stamp)))
+    print(f"Index of time step closest to {time_stamp} TU: {index}")
     return index
 
-def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = False, view = [23,-110, 0], x_lim = None, t_lim = None, u_lim = None):
+def view_simulation_results(sol, time_array, x_array, time_stamp,
+                            debris_pos = False, view = [23,-110, 0], x_lim = None, t_lim = None,
+                            u_lim = None):
     """Visualizes the simulation results at a specific time step and as a 3D surface plot."""
     # Find the index of the time step closest to the specified time_tu
     print("Plotting simulation results...")
@@ -136,7 +138,7 @@ def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = F
     ax.grid()
 
     # 3D surface plot of the solution over time
-    Xi, Tau = np.meshgrid(x_array, time_array)  # Create meshgrid for plotting
+    Xi, Tau = np.meshgrid( x_array, time_array)  # Create meshgrid for plotting
 
     ax = plt.subplot(122, projection='3d')
     ax.plot_surface(Xi, Tau, sol, rstride=5, cstride=5, cmap='viridis')

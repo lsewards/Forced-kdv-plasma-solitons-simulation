@@ -2,6 +2,7 @@
 import numpy as np
 import importlib
 import pandas as pd
+import matplotlib.pyplot as plt
 from functools import partial
 import fkdv_simulation as sim
 import plasma_enviroment as env
@@ -33,22 +34,22 @@ np_potential = None  # Normalised plasma potential, if None, it will be automati
 G = None  # Normalised forcing width
 
 # simulation intialisation
-mode = "analytical"  # simulation mode: "rest" for starting from rest frame, "analytical" for starting from an exact solution
+mode = "analytical"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
 exact_wave_fn = exact.xiao_traveling_wave_exact  # module containing analytical solutions for the KdV equation
 wave_args = [1/6, 4, 1, [-1, 2, -1]]  # arguments for the analytical solution function
 
 stabilising_steps = 1  # number of steps to stabilise the solution at the start of the simulation
 
 # Simulation parameters
-N = 1024  # number of discretised points in the domain (power of 2 for FFT speed)
+N = 600  # number of discretised points in the domain (power of 2 for FFT speed)
 L = 50.0  # size of the domain in debye lengths
 dtau = 1e-4  # TU
-tau_inital = 0.0  # TU
-tau_final =  1.0   # TU
+tau_inital = -2.0  # TU
+tau_final =  2.0   # TU
 
 # Plotting params
-verbose = 10  # print every verbose number of steps
-time_stamp_2d = 30.0  # time stamp for the 2D plot in TU
+verbose = 100  # print every verbose number of steps
+time_stamp_2d = 1.0  # time stamp for the 2D plot in TU
 view = [23,-110, 0]  # 3D plot view angles
 x_lim = None
 y_lim = None
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     else:
         loaded_wave_exact = exact_wave_fn
 
-    sol, time_array, x_array = sim.run_simulation(L, N, tau_inital, tau_final, dtau, alpha, beta,
+    sim_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, tau_inital, tau_final, dtau, alpha, beta,
                                             mode=mode,
                                             forcing_fn=loaded_forcing_fn,
                                             analytical_sol= loaded_wave_exact,
@@ -120,8 +121,7 @@ if __name__ == "__main__":
                                             verbose=verbose,
                                             solver=sim.ck_solver
     )
-
-    sim.view_simulation_results(sol, time_array, x_array,
+    sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                             time_stamp=time_stamp_2d,
                             debris_pos = display_debris_pos,
                             view = view,
@@ -129,3 +129,23 @@ if __name__ == "__main__":
                             t_lim = y_lim,
                             u_lim = u_lim
     )
+
+    real_sol = sim.get_real_solutions(loaded_wave_exact, sim_x_array, sim_time_array)
+    view_sim_results = sim.view_simulation_results(real_sol, sim_time_array, sim_x_array,
+                            time_stamp=time_stamp_2d,
+                            debris_pos = display_debris_pos,
+                            view = view,
+                            x_lim = x_lim,
+                            t_lim = y_lim,
+                            u_lim = u_lim
+    )
+
+    i = sim.find_time_index(sim_time_array, time_stamp_2d)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(sim_x_array, real_sol[i] - sim_sol[i], color='blue')
+    plt.title(f"Comparison of Numerical and Analytical Solutions at {time_stamp_2d} TU")
+    plt.xlabel("x axis")
+    plt.ylabel("Ureal - Uanalytical")
+    plt.grid()
+    plt.show()

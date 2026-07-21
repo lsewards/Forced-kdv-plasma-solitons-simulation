@@ -1,1 +1,5 @@
-a = debrus radii
+## One Dimensional Numerical Simulation of Solitons induced by charge space debrus in plasma enviroment.
+
+This project aims to recreate the work of _Hartzell and Akin, 2019_ paper which investigated the velcoity dependance of 
+solitons induced by charge space debris in a plasma environment. The simulation is implemented in Python and utilizes 
+numerical methods to model the behavior of solitons under various conditions.
