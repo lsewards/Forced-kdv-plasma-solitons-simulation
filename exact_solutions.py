@@ -51,3 +51,9 @@ def wu_wave_exact(A, K, x, t):
 
 def wu_forcing_exact( b1, K, x, t):
     return 2 * b1 * (np.cosh(K * x) ** (-2))
+
+def sen_wave_exact(A, G, x, t):
+    return A * sech_sqrd( np.sqrt(A / 6) * ((x - (2 * A - 3 * G )/6) * t) )
+
+def sen_forcing_exact(A, G, x, t):
+    return (A * G) * sech_sqrd( np.sqrt(A / 6) * ((x - (2 * A - 3 * G )/6) * t) )
