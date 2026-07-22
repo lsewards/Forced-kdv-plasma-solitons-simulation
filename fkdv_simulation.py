@@ -3,14 +3,14 @@ import numpy as np
 from numpy.fft import rfft, irfft
 import matplotlib.pyplot as plt
 
-def ck_solver(prev_sol, curr_sol, f, k, alpha, beta, dt, s = 1.0):
+def ck_solver(prev_sol, curr_sol, f, k, alpha, beta, dt):
     """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain."""
 
     k_fs = k[:len(k) // 2 + 1] # slicing k down 1024 (real) = 1024 // 2 + 1 (fourier space )
 
     # pre-calculating coefficients
-    _ck_beta_fs = dt * beta * 1j * (k_fs ** 3) * (s ** 3)
-    _ck_z_fs = dt * 1j * k_fs * s
+    _ck_beta_fs = dt * beta * 1j * (k_fs ** 3)
+    _ck_z_fs = dt * 1j * k_fs
 
     # Fourier transform of the last solution, current solution, and forcing term
     fft_prev = rfft(prev_sol)
@@ -37,7 +37,8 @@ def fw_solver(prev_sol, curr_sol, f, k, alpha, beta, dt, s = 1.0):
             + dt * s * ifft_f_ik)
 
 ## Running the Simulation
-def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analytical_sol=None, forcing_fn=None, stabilising_steps=10, verbose=10, solver = ck_solver):
+def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analytical_sol=None,
+                   forcing_fn=None, stabilising_steps=10, verbose=10, solver = ck_solver):
     """Runs the simulation for the normalised forced KdV equation using the Crank-Nicolson scheme. The simulation can be run in two modes: 'rest' for starting from rest frame, and 'analyitcal' starting from some exact solution for the kdv equation. The function returns the solution array, time array, and mesh space."""
 
     def _get_next_solution(previous, current, current_time, dt):
@@ -60,7 +61,7 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
         #print(f"Stabilisation complete. Time: {sim_time:.2f} TU")
         return initial_sol, curr_sol, sim_time  # The two-level step needs states separated by exactly ``dt``.
 
-    x_array = np.linspace(-L, L, N) # Defining mesh space & wave numbers
+    x_array = np.linspace(-L, L, N, endpoint=False) # Defining mesh space & wave numbers
     k = 2 * np.pi * np.fft.fftfreq(N, d=(x_array[1] - x_array[0]))  # Wave numbers for FFT , d = dx
 
     if mode == "rest":
