@@ -22,29 +22,29 @@ __mo__ = 15.994914619 * 1.66053906892e-27  # Oxygen ion mass in kg
 region = "Low LEO"  # Ionosphere region to simulate
 
 # physical parameters
-alpha = 6 # Nonlinearity parameter ( 1.0051)
-beta = 1 # Dispersion parameter (0.4925)
+alpha = 1.0051 # Nonlinearity parameter ( 1.0051)
+beta = 0.4925 # Dispersion parameter (0.4925)
 
 # forcing parameters
-forcing_fn = exact.xiao_traveling_forcing_exact
-forcing_args = [-2, 1/6, 4, 1, [-1, 2, -1]]
-debris_size = 0.5 # Forcing amplitude in V
+forcing_fn = env.xiao_traveling # Forcing function, can be set to None for no forcing
+forcing_args = None
+debris_size = 0.7 # Forcing amplitude in V
 vd = None # Debris velocity in km/s
-np_potential = None  # Normalised plasma potential, if None, it will be automatically calculated.
+np_potential = -1.77  # Normalised plasma potential, if None, it will be automatically calculated.
 G = None  # Normalised forcing width
 
 # simulation intialisation
-mode = "analytical"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
-exact_wave_fn = exact.xiao_traveling_wave_exact  # module containing analytical solutions for the KdV equation
-wave_args = [1/6, 4, 1, [-1, 2, -1]]  # arguments for the analytical solution function
+mode = "rest"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
+exact_wave_fn = None # module containing analytical solutions for the KdV equation
+wave_args = None  # arguments for the analytical solution functionn
 
-stabilising_steps = 1  # number of steps to stabilise the solution at the start of the simulation
+stabilising_steps = 10  # number of steps to stabilise the solution at the start of the simulation
 
 # Simulation parameters
-N = 600  # number of discretised points in the domain (power of 2 for FFT speed)
-L = 50.0  # size of the domain in debye lengths
+N = 1024 # number of discretised points in the domain (power of 2 for FFT speed)
+L = 1500.0  # size of the domain in debye lengths
 dtau = 1e-4  # TU
-tau_inital = -2.0  # TU
+tau_inital = 0.0  # TU
 tau_final =  2.0   # TU
 
 # Plotting params
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         raise ValueError("Ion species not recognised. Please use 'O' for Oxygen or 'H' for Hydrogen.")
 
     # Unless directly speified, uses default values from spreadsheet or calculation
-    if forcing_fn is None:
+    if forcing_fn is env.forcing_space_debris:
         if np_potential is None:
             np_potential = env.normalised_plasma_potential(debris_size, debye_length_m, mass_ratio)
         if vd is None:
@@ -103,6 +103,8 @@ if __name__ == "__main__":
         forcing_fn = env.forcing_space_debris
         forcing_args = [np_potential, vd_norm, G]
 
+        print(forcing_args)
+
     if forcing_args:
         loaded_forcing_fn= partial(forcing_fn, *forcing_args)
     else:
@@ -113,6 +115,7 @@ if __name__ == "__main__":
     else:
         loaded_wave_exact = exact_wave_fn
 
+    # Run the simulation and view results
     sim_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, tau_inital, tau_final, dtau, alpha, beta,
                                             mode=mode,
                                             forcing_fn=loaded_forcing_fn,
@@ -122,30 +125,33 @@ if __name__ == "__main__":
                                             solver=sim.ck_solver
     )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
-                            time_stamp=time_stamp_2d,
-                            debris_pos = display_debris_pos,
-                            view = view,
-                            x_lim = x_lim,
-                            t_lim = y_lim,
-                            u_lim = u_lim
-    )
+                                time_stamp=time_stamp_2d,
+                                debris_pos=display_debris_pos,
+                                view=view,
+                                x_lim=x_lim,
+                                t_lim=y_lim,
+                                u_lim=u_lim
+                                )
 
-    real_sol = sim.get_real_solutions(loaded_wave_exact, sim_x_array, sim_time_array)
-    view_sim_results = sim.view_simulation_results(real_sol, sim_time_array, sim_x_array,
-                            time_stamp=time_stamp_2d,
-                            debris_pos = display_debris_pos,
-                            view = view,
-                            x_lim = x_lim,
-                            t_lim = y_lim,
-                            u_lim = u_lim
-    )
 
-    i = sim.find_time_index(sim_time_array, time_stamp_2d)
+    if exact_wave_fn is not None:
+        # Compare the numerical solution with the analytical solution at a specific time stamp
+        real_sol = sim.get_real_solutions(loaded_wave_exact, sim_x_array, sim_time_array)
+        view_sim_results = sim.view_simulation_results(real_sol, sim_time_array, sim_x_array,
+                                time_stamp=time_stamp_2d,
+                                debris_pos = display_debris_pos,
+                                view = view,
+                                x_lim = x_lim,
+                                t_lim = y_lim,
+                                u_lim = u_lim
+        )
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(sim_x_array, real_sol[i] - sim_sol[i], color='blue')
-    plt.title(f"Comparison of Numerical and Analytical Solutions at {time_stamp_2d} TU")
-    plt.xlabel("x axis")
-    plt.ylabel("Ureal - Uanalytical")
-    plt.grid()
-    plt.show()
+        i = sim.find_time_index(sim_time_array, time_stamp_2d)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(sim_x_array, real_sol[i] - sim_sol[i], color='blue')
+        plt.title(f"Comparison of Numerical and Analytical Solutions at {time_stamp_2d} TU")
+        plt.xlabel("x axis")
+        plt.ylabel("Ureal - Uanalytical")
+        plt.grid()
+        plt.show()
