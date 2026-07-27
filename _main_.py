@@ -14,47 +14,34 @@ importlib.reload(exact)
 
 # Global constants
 __kb__ = 1.380649e-23  #Boltzmann constant in J/K
-__c__ = 299792458.0  # Speed of light in m/s
-__me__ = 9.1093837139e-31  # Electron mass in kg
-__mh__ = 1.67262192595e-27  # Hydrogen ion aka proton mass in kg
-__mo__ = 15.994914619 * 1.66053906892e-27  # Oxygen ion mass in kg
+__c__  = 299792458.0  # Speed of light in m/s
 
 region = "Low LEO"  # Ionosphere region to simulate
 
 # physical parameters
-alpha = 1.0051 # Nonlinearity parameter ( 1.0051)
-beta = 0.4925 # Dispersion parameter (0.4925)
+alpha        = 1 # Nonlinearity parameter ( 1.0051)
+beta         = 1/6 # Dispersion parameter (0.4925)
+# below only relivent when forcing function is env.forcing_space_debris
+debris_size  = 0.5
+vd           = None
+np_potential = None
+G            = None
 
-# forcing parameters
-forcing_fn = env.xiao_traveling # Forcing function, can be set to None for no forcing
-forcing_args = None
-debris_size = 0.7 # Forcing amplitude in V
-vd = None # Debris velocity in km/s
-np_potential = -1.77  # Normalised plasma potential, if None, it will be automatically calculated.
-G = None  # Normalised forcing width
 
-# simulation intialisation
-mode = "rest"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
-exact_wave_fn = None # module containing analytical solutions for the KdV equation
-wave_args = None  # arguments for the analytical solution functionn
+# ----- Simulation parameters ----
+L         = 50.0
+N         = 1024
+dt        = 1e-4
+t_initial = -2.0
+t_final   =  2.0
 
-stabilising_steps = 10  # number of steps to stabilise the solution at the start of the simulation
+mode = "analytical"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
 
-# Simulation parameters
-N = 1024 # number of discretised points in the domain (power of 2 for FFT speed)
-L = 1500.0  # size of the domain in debye lengths
-dtau = 1e-4  # TU
-tau_inital = 0.0  # TU
-tau_final =  2.0   # TU
+exact_wave_fn = exact.xiao_traveling_wave_exact  # module containing analytical solutions for the KdV equation
+forcing_fn = exact.xiao_traveling_forcing_exact
 
-# Plotting params
-verbose = 100  # print every verbose number of steps
-time_stamp_2d = 1.0  # time stamp for the 2D plot in TU
-view = [23,-110, 0]  # 3D plot view angles
-x_lim = None
-y_lim = None
-u_lim = None
-display_debris_pos = False
+wave_args = [beta, 4, 1, [-1, 2, -1]]  # arguments for the analytical solution function
+forcing_args = [-2, beta, 4, 1, [-1, 2, -1]]
 
 def initialise_ionosphere_region(df, region):
     """ takes a dataframe of ionospheric properties and pulls the associated properties for a given region.
@@ -79,59 +66,47 @@ if __name__ == "__main__":
     vi_km_s = plasma_prop["Ion Acoustic Velocity"]
     TU = debye_length_m / (vi_km_s * 1e3)
 
-    # Determine the ion species and set the corresponding ion mass and mass ratio
-    if plasma_prop["Ion Species"] == "O":
-        mi = __mo__
-        mass_ratio = __me__ / __mo__
-    elif plasma_prop["Ion Species"] == "H":
-        mi = __mh__
-        mass_ratio = __me__ / __mh__
-    else:
-        raise ValueError("Ion species not recognised. Please use 'O' for Oxygen or 'H' for Hydrogen.")
-
-    # Unless directly speified, uses default values from spreadsheet or calculation
-    if forcing_fn is env.forcing_space_debris:
-        if np_potential is None:
-            np_potential = env.normalised_plasma_potential(debris_size, debye_length_m, mass_ratio)
-        if vd is None:
-            vd = plasma_prop["Debris Velocity Circular Orbit"]  # Debris velocity in km/s
-        if G is None:
-            G = debris_size / debye_length_m  # Normalised forcing width
-
-        vd_norm = vd / vi_km_s  # Normalised debris velocity
-
-        forcing_fn = env.forcing_space_debris
-        forcing_args = [np_potential, vd_norm, G]
-
-        print(forcing_args)
-
-    if forcing_args:
-        loaded_forcing_fn= partial(forcing_fn, *forcing_args)
-    else:
-        loaded_forcing_fn = forcing_fn
-
     if wave_args:
         loaded_wave_exact = partial(exact_wave_fn, *wave_args)
     else:
         loaded_wave_exact = exact_wave_fn
 
+
+    if forcing_fn == env.forcing_space_debris:
+        forcing_args = env.get_forcing_space_debris_args(plasma_prop, debris_size, debye_length_m, vi_km_s,
+                                                         np_potential, vd, G)
+
+    elif forcing_fn == exact.xiao_traveling_forcing_exact or forcing_fn == exact.xiao_special_forcing_exact:
+        loaded_forcing_fn = exact.normalised_xiao_forcing_exact(-2 , forcing_fn, *forcing_args)
+
+    else:
+        loaded_forcing_fn = partial(forcing_fn, *forcing_args) if forcing_args else forcing_fn
+
+
     # Run the simulation and view results
-    sim_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, tau_inital, tau_final, dtau, alpha, beta,
-                                            mode=mode,
-                                            forcing_fn=loaded_forcing_fn,
-                                            analytical_sol= loaded_wave_exact,
-                                            stabilising_steps=stabilising_steps,
-                                            verbose=verbose,
-                                            solver=sim.ck_solver
-    )
+    sim_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, t_initial, t_final, dt, alpha, beta,
+                                                              mode=mode,
+                                                              forcing_fn=loaded_forcing_fn,
+                                                              analytical_sol= loaded_wave_exact,
+                                                              stabilising_steps=10,
+                                                              verbose=10,
+                                                              solver=sim.ck_solver
+                                                              )
+
+    # Plotting params
+    time_stamp_2d = 0  # time stamp for the 2D plot in TU
+    view = [23, -110, 0]  # 3D plot view angles
+    x_lim = [-5, 5]
+    t_lim = [-1, 1]
+    display_debris_pos = False
+
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
-                                time_stamp=time_stamp_2d,
+                                time_stamp= time_stamp_2d,
                                 debris_pos=display_debris_pos,
                                 view=view,
                                 x_lim=x_lim,
-                                t_lim=y_lim,
-                                u_lim=u_lim
-                                )
+                                t_lim=t_lim
+    )
 
 
     if exact_wave_fn is not None:
@@ -142,11 +117,10 @@ if __name__ == "__main__":
                                 debris_pos = display_debris_pos,
                                 view = view,
                                 x_lim = x_lim,
-                                t_lim = y_lim,
-                                u_lim = u_lim
+                                t_lim = t_lim
         )
 
-        i = sim.find_time_index(sim_time_array, time_stamp_2d)
+        i = sim.find_value_index(sim_time_array, time_stamp_2d)
 
         plt.figure(figsize=(10, 6))
         plt.plot(sim_x_array, real_sol[i] - sim_sol[i], color='blue')
