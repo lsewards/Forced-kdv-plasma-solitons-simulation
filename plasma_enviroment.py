@@ -1,6 +1,12 @@
 import numpy as np
 from scipy.optimize import brentq
 
+
+# Constants for electron, hydrogen ion (proton), and oxygen ion masses in kilograms
+__me__ = 9.1093837139e-31  # Electron mass in kg
+__mh__ = 1.67262192595e-27  # Hydrogen ion aka proton mass in kg
+__mo__ = 15.994914619 * 1.66053906892e-27  # Oxygen ion mass in kg
+
 def normalised_plasma_potential(a, debye_length, mass_ratio, potential_radius=None):
     """Calculates normalised plasma potential; ``a`` and ``debye_length`` must use the same length unit."""
     def _eqn_surface_potential(x, mass_ratio, s, a):
@@ -24,3 +30,28 @@ def forcing_space_debris(np_potential, vd, G, x, time):
         Returns: Forcing term as a numpy array
     """
     return np_potential * np.exp(-1 * (((x - vd * time ) / G) ** 2))
+
+def get_forcing_space_debris_args(plasma_prop, debris_size, debye_length_m, vi_km_s, np_potential, vd, G):
+    """ Returns a list of pre-defined parameters for the forcing term calculation."""
+    # Unless directly specified, uses default values from spreadsheet or calculation
+    if np_potential is None:
+        # Determine the ion species and set the corresponding ion mass and mass ratio for the plasma region
+        if plasma_prop["Ion Species"] == "O":
+            mi = __mo__
+            mass_ratio = __me__ / __mo__
+        elif plasma_prop["Ion Species"] == "H":
+            mi = __mh__
+            mass_ratio = __me__ / __mh__
+        else:
+            raise ValueError("Ion species not recognised. Please use 'O' for Oxygen or 'H' for Hydrogen.")
+
+        np_potential = normalised_plasma_potential(debris_size, debye_length_m, mass_ratio)
+
+    if vd is None:
+        vd = plasma_prop["Debris Velocity Circular Orbit"]  # Debris velocity in km/s
+    if G is None:
+        G = debris_size / debye_length_m  # Normalised forcing width
+
+    vd_norm = vd / vi_km_s  # Normalised debris velocity
+
+    return [np_potential, vd_norm, G]
