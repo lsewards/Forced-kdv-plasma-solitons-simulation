@@ -20,7 +20,7 @@ region = "Low LEO"  # Ionosphere region to simulate
 
 # physical parameters
 alpha        = 1 # Nonlinearity parameter ( 1.0051)
-beta         = 1/6 # Dispersion parameter (0.4925)
+beta         = 1/4 # Dispersion parameter (0.4925)
 # below only relivent when forcing function is env.forcing_space_debris
 debris_size  = 0.5
 vd           = None
@@ -28,20 +28,20 @@ np_potential = None
 G            = None
 
 
-# ----- Simulation parameters ----
+# Simulation parameters
 L         = 50.0
 N         = 1024
 dt        = 1e-4
-t_initial = -2.0
-t_final   =  2.0
+t_initial = -5.0
+t_final   =  5.0
 
 mode = "analytical"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
 
-exact_wave_fn = exact.xiao_traveling_wave_exact  # module containing analytical solutions for the KdV equation
-forcing_fn = exact.xiao_traveling_forcing_exact
+exact_wave_fn = exact.xiao_special_wave_exact # module containing analytical solutions for the KdV equation
+forcing_fn = exact.xiao_special_forcing_exact
 
-wave_args = [beta, 4, 1, [-1, 2, -1]]  # arguments for the analytical solution function
-forcing_args = [-2, beta, 4, 1, [-1, 2, -1]]
+wave_args = [beta, 1, 3, [0, -3, -1]]
+forcing_args = [ 2, beta, 4, 1, 3, [0, -3, -1]]
 
 def initialise_ionosphere_region(df, region):
     """ takes a dataframe of ionospheric properties and pulls the associated properties for a given region.
@@ -76,8 +76,11 @@ if __name__ == "__main__":
         forcing_args = env.get_forcing_space_debris_args(plasma_prop, debris_size, debye_length_m, vi_km_s,
                                                          np_potential, vd, G)
 
-    elif forcing_fn == exact.xiao_traveling_forcing_exact or forcing_fn == exact.xiao_special_forcing_exact:
+    elif forcing_fn == exact.xiao_traveling_forcing_exact :
         loaded_forcing_fn = exact.normalised_xiao_forcing_exact(-2 , forcing_fn, *forcing_args)
+
+    elif forcing_fn == exact.xiao_special_forcing_exact:
+        loaded_forcing_fn = exact.normalised_xiao_forcing_exact(2, forcing_fn, *forcing_args)
 
     else:
         loaded_forcing_fn = partial(forcing_fn, *forcing_args) if forcing_args else forcing_fn
@@ -94,10 +97,10 @@ if __name__ == "__main__":
                                                               )
 
     # Plotting params
-    time_stamp_2d = 0  # time stamp for the 2D plot in TU
+    time_stamp_2d = 2  # time stamp for the 2D plot in TU
     view = [23, -110, 0]  # 3D plot view angles
     x_lim = [-5, 5]
-    t_lim = [-1, 1]
+    t_lim = [-2, 2]
     display_debris_pos = False
 
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
@@ -123,7 +126,7 @@ if __name__ == "__main__":
         i = sim.find_value_index(sim_time_array, time_stamp_2d)
 
         plt.figure(figsize=(10, 6))
-        plt.plot(sim_x_array, real_sol[i] - sim_sol[i], color='blue')
+        plt.plot(sim_x_array, (real_sol[i] - sim_sol[i]), color='blue')
         plt.title(f"Comparison of Numerical and Analytical Solutions at {time_stamp_2d} TU")
         plt.xlabel("x axis")
         plt.ylabel("Ureal - Uanalytical")
