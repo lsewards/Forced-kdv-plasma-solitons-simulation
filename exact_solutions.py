@@ -1,4 +1,5 @@
 import numpy as np
+from functools import partial
 
 def sech_sqrd(x):
     return np.cosh(x) ** (-2)
@@ -18,6 +19,12 @@ def n_soltion_exact( x, t, n = 3):
     return n *(n+1) * sech_sqrd(x)
 
 # Xiao's exact solution for the forced KdV equation
+
+def normalised_xiao_forcing_exact(alpha_zg, xiao_forcing_exact_fn, *xiao_forcing_exact_args):
+    """ Normalises the forcing term for the tsunami fkdv dervived wave solution for the plasma fkdv equation. """
+    base_fn = partial(xiao_forcing_exact_fn, *xiao_forcing_exact_args)
+    return lambda x, t: 2 * alpha_zg * base_fn(x, t)
+
 def xiao_traveling_forcing_exact( alpha_zg, beta, delta, kappa, b, x,
                                   t):
     """ t = time"""
