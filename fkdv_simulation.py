@@ -88,6 +88,7 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
                 prev_sol, curr_sol = analytical_sol(x_array, sim_time - dt), analytical_sol(x_array, sim_time)  # Initial condition is set to the exact solution of the KdV equation
 
         next_sol = _get_next_solution(prev_sol, curr_sol, sim_time, dt)
+        sim_time += dt
 
         if step % verbose == 0:  # only prints and records every verbose number of steps
             sol[recorded_steps] = next_sol
@@ -98,7 +99,6 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
 
         prev_sol, curr_sol = curr_sol, next_sol
         step += 1
-        sim_time += dt
     print("Simulation complete.")
     return sol[:recorded_steps], time_array[:recorded_steps], x_array
 
