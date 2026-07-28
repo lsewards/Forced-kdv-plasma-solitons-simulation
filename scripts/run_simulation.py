@@ -35,7 +35,7 @@ t_final   =  2.1
 mode = "rest"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
 
 exact_wave_fn = None # module containing analytical solutions for the KdV equation
-forcing_fn = exact.dirac_forcing_exact # module containing forcing functions for the KdV equation
+forcing_fn = exact.xiao_special_wave_exact # module containing forcing functions for the KdV equation
 
 wave_args = None
 forcing_args = None
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     if exact_wave_fn is not None:
         # Compare the numerical solution with the analytical solution at a specific time stamp
-        real_sol = sim.get_real_solutions(loaded_wave_exact, sim_x_array, sim_time_array)
+        real_sol = exact.get_real_solutions(loaded_wave_exact, sim_x_array, sim_time_array)
         view_sim_results = sim.view_simulation_results(real_sol, sim_time_array, sim_x_array,
                                 time_stamp=time_stamp_2d,
                                 debris_pos = display_debris_pos,

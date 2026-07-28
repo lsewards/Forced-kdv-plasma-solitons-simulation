@@ -16,7 +16,7 @@ def unforced_kdv_solution(x, t):
     return np.zeros_like(x)  # Placeholder for the actual analytical solution of the unforced KdV equation
 
 def n_soltion_exact( x, t, n = 3):
-    return n *(n+1) * sech_sqrd(x)
+    return n * ( n + 1) * sech_sqrd(x)
 
 # Xiao's exact solution for the forced KdV equation
 
