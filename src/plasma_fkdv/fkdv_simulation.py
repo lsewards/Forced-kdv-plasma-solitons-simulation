@@ -102,13 +102,6 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
     print("Simulation complete.")
     return sol[:recorded_steps], time_array[:recorded_steps], x_array
 
-# real solution
-def get_real_solutions(exact_wave_fn, x_array, time_array):
-    real_sol = np.zeros((len(time_array), len(x_array)))
-    for i in range(len(time_array)):
-        real_sol[i] = exact_wave_fn(x_array, time_array[i])
-    return real_sol
-
 def find_value_index(array, value):
     """Return the index of the closest entry to value in an array."""
     if len(array) == 0:

@@ -3,63 +3,55 @@ import numpy as np
 import importlib
 import pandas as pd
 import matplotlib.pyplot as plt
+from src.plasma_fkdv import fkdv_simulation as sim
+from src.plasma_fkdv import exact_solutions as exact
+from src.plasma_fkdv import plasma_environment as env
 from functools import partial
-import fkdv_simulation as sim
-import plasma_enviroment as env
-import exact_solutions as exact
+from pathlib import Path
 
-importlib.reload(sim)
-importlib.reload(env)
-importlib.reload(exact)
+PROJECT_ROOT = Path(__name__).resolve().parent.parent
 
-# Global constants
-__kb__ = 1.380649e-23  #Boltzmann constant in J/K
-__c__  = 299792458.0  # Speed of light in m/s
+# ======= Simulation Configuration =======
 
 region = "Low LEO"  # Ionosphere region to simulate
 
-# physical parameters
-alpha        = 1 # Nonlinearity parameter ( 1.0051)
-beta         = 1/4 # Dispersion parameter (0.4925)
-# below only relivent when forcing function is env.forcing_space_debris
-debris_size  = 0.5
+#-------  Physical parameters ------------
+alpha        = -3/2 # Nonlinearity ( 1.0051)
+beta         = -1/6 # Dispersion (0.4925)
+# below only relevant when forcing function is env.forcing_space_debris
+debris_size  = None
 vd           = None
 np_potential = None
 G            = None
 
 
-# Simulation parameters
+# -------- Simulation parameters ---------
 L         = 50.0
 N         = 1024
-dt        = 1e-4
-t_initial = -5.0
-t_final   =  5.0
+dt        = 5e-5
+t_initial = -2.1
+t_final   =  2.1
 
-mode = "analytical"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
+mode = "rest"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
 
-exact_wave_fn = exact.xiao_special_wave_exact # module containing analytical solutions for the KdV equation
-forcing_fn = exact.xiao_special_forcing_exact
+exact_wave_fn = None # module containing analytical solutions for the KdV equation
+forcing_fn = exact.dirac_forcing_exact # module containing forcing functions for the KdV equation
 
-wave_args = [beta, 1, 3, [0, -3, -1]]
-forcing_args = [ 2, beta, 4, 1, 3, [0, -3, -1]]
+wave_args = None
+forcing_args = None
 
-def initialise_ionosphere_region(df, region):
-    """ takes a dataframe of ionospheric properties and pulls the associated properties for a given region.
-    making the necessary calculations required to run simulation CURRENTLY NOT ABLE TO HANDLE GEO"""
-
-    # Pulls property name and values into a list and numpy array respectively
-    value = df[region].to_numpy()
-    properties = df["Properties"].to_list()
-
-    # Creates a dictionary of the properties and values for the given region
-    plasma_properties = dict(zip(properties, value))
-    return plasma_properties
+# -------- Plotting params -----------------
+time_stamp_2d = 1.9  # time stamp for the 2D plot in TU
+view = [23, -110, 0]  # 3D plot view angles
+x_lim = [-5, 5]
+t_lim = [-2, 2]
+display_debris_pos = False
 
 if __name__ == "__main__":
 
     # Initializes the conditions for the region in question and sets the ion mass and mass ratio based on the ion species
-    df_ionosphere = pd.read_excel(r'Ionosphere prop.xltx')
-    plasma_prop = initialise_ionosphere_region(df_ionosphere, region)
+    df_ionosphere = pd.read_excel(PROJECT_ROOT / 'data' / 'Ionosphere_prop.xltx')
+    plasma_prop = env.initialise_ionosphere_region(df_ionosphere, region)
 
     # Normalizes plasma properties
     debye_length_m = plasma_prop["Debye Length"] * 1e-2
@@ -96,13 +88,6 @@ if __name__ == "__main__":
                                                               solver=sim.ck_solver
                                                               )
 
-    # Plotting params
-    time_stamp_2d = 2  # time stamp for the 2D plot in TU
-    view = [23, -110, 0]  # 3D plot view angles
-    x_lim = [-5, 5]
-    t_lim = [-2, 2]
-    display_debris_pos = False
-
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
                                 debris_pos=display_debris_pos,
@@ -132,3 +117,7 @@ if __name__ == "__main__":
         plt.ylabel("Ureal - Uanalytical")
         plt.grid()
         plt.show()
+
+        print(f"At time {time_stamp_2d} t")
+        print(f"The Absolute Error : {np.max(np.abs(real_sol[i] - sim_sol[i]))}")
+        print(f"The Relative Error : {np.max(np.abs(real_sol[i] - sim_sol[i])) / np.max(np.abs(real_sol[i]))}")

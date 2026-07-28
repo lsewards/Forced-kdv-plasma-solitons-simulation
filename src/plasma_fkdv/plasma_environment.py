@@ -1,11 +1,6 @@
 import numpy as np
 from scipy.optimize import brentq
-
-
-# Constants for electron, hydrogen ion (proton), and oxygen ion masses in kilograms
-__me__ = 9.1093837139e-31  # Electron mass in kg
-__mh__ = 1.67262192595e-27  # Hydrogen ion aka proton mass in kg
-__mo__ = 15.994914619 * 1.66053906892e-27  # Oxygen ion mass in kg
+from .constants import __me__, __mh__, __mo__
 
 def normalised_plasma_potential(a, debye_length, mass_ratio, potential_radius=None):
     """Calculates normalised plasma potential; ``a`` and ``debye_length`` must use the same length unit."""
@@ -55,3 +50,15 @@ def get_forcing_space_debris_args(plasma_prop, debris_size, debye_length_m, vi_k
     vd_norm = vd / vi_km_s  # Normalised debris velocity
 
     return [np_potential, vd_norm, G]
+
+def initialise_ionosphere_region(df, region):
+    """ takes a dataframe of ionospheric properties and pulls the associated properties for a given region.
+    making the necessary calculations required to run simulation CURRENTLY NOT ABLE TO HANDLE GEO"""
+
+    # Pulls property name and values into a list and numpy array respectively
+    value = df[region].to_numpy()
+    properties = df["Properties"].to_list()
+
+    # Creates a dictionary of the properties and values for the given region
+    plasma_properties = dict(zip(properties, value))
+    return plasma_properties
