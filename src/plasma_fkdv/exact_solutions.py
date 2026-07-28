@@ -67,4 +67,4 @@ def sen_wave_exact(A, G, x, t):
     return A * sech_sqrd( np.sqrt(A / 6) * (x - ((2 * A - 3 * G) / 6) * t) )
 
 def sen_forcing_exact(A, G, x, t):
-    return (A * G) * sech_sqrd( np.sqrt(A / 6) * (x - ((2 * A - 3 * G )/6) * t) )
+    return A * G * sech_sqrd( np.sqrt(A / 6) * (x - ((2 * A - 3 * G )/6) * t) )
