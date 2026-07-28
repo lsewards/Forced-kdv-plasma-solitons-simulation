@@ -52,6 +52,10 @@ def xiao_special_wave_exact( beta, k, A, b, x, t):
     _wave_const = b[2] * np.arctan(A*t) + b[1] * t + b[0]
     return 12 * beta * (k ** 2) * sech_sqrd(k * (x - 4 * (k ** 2) * t) - _wave_const)
 
+def dirac_forcing_exact(x, t):
+    """ Dirac delta function forcing term for the KdV equation. """
+    return np.where(np.isclose(x, 0), 1.0, 0.0)  # Dirac delta at x=0
+
 # Wu's exact solution for the forced KdV equation
 def wu_wave_exact(A, K, x, t):
     return A * (np.cosh(K * x) ** (-2))
@@ -60,7 +64,7 @@ def wu_forcing_exact( b1, K, x, t):
     return 2 * b1 * (np.cosh(K * x) ** (-2))
 
 def sen_wave_exact(A, G, x, t):
-    return A * sech_sqrd( np.sqrt(A / 6) * ((x - (2 * A - 3 * G )/6) * t) )
+    return A * sech_sqrd( np.sqrt(A / 6) * (x - ((2 * A - 3 * G) / 6) * t) )
 
 def sen_forcing_exact(A, G, x, t):
-    return (A * G) * sech_sqrd( np.sqrt(A / 6) * ((x - (2 * A - 3 * G )/6) * t) )
+    return (A * G) * sech_sqrd( np.sqrt(A / 6) * (x - ((2 * A - 3 * G )/6) * t) )
