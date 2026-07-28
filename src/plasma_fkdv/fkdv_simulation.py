@@ -59,28 +59,30 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
             prev_sol, curr_sol = curr_sol, _get_next_solution(prev_sol, curr_sol, sim_time, dt / stabilising_steps)
             sim_time += dt / stabilising_steps
         #print(f"Stabilisation complete. Time: {sim_time:.2f} TU")
-        return initial_sol, curr_sol, sim_time  # The two-level step needs states separated by exactly ``dt``.
+        if abs((sim_time - dt) - t_initial) > 1e-10:
+            raise ValueError("Stabilisation failed to align with initial time.")
+        else:
+            return initial_sol, curr_sol, sim_time # The two-level step needs states separated by exactly ``dt``.
+
+    if mode not in ("rest", "analytical"):
+        raise ValueError("Invalid mode. Please choose 'rest' or 'analytical'.")
+    if mode == "analytical" and analytical_sol is None:
+        raise ValueError("Analytical solution function must be provided when mode is 'analytical'.")
+
 
     x_array = np.linspace(-L, L, N, endpoint=False) # Defining mesh space & wave numbers
     k = 2 * np.pi * np.fft.fftfreq(N, d=(x_array[1] - x_array[0]))  # Wave numbers for FFT , d = dx
 
-    if mode == "rest":
-        num_allocated_steps = int((abs(t_initial - t_final) // dt + 1 + stabilising_steps) // verbose)
-    elif mode == "analytical":
-        if analytical_sol is None:
-            raise ValueError("Analytical solution function must be provided when mode is 'analytical'.")
-        num_allocated_steps = int((abs((t_initial - t_final) / dt) + 1) // verbose)
-    else:
-        raise ValueError("Invalid mode. Please choose 'rest' or 'analytical'.")
+    total_steps = int(round(abs(t_final - t_initial) / dt))
+    num_allocated_steps = total_steps // verbose
 
     time_array = np.zeros(num_allocated_steps)  # Pre-allocate time array for efficiency
     sol = np.zeros((num_allocated_steps, N))  # Pre-allocate solution array for efficiency
 
-
     step = 1  # Start from the second time step since the first two are already set
     recorded_steps = 0  # Counter for the number of recorded steps
     sim_time = t_initial  # start
-    while sim_time < t_final:
+    while step <= total_steps:
         if sim_time == t_initial: # Initialising simulation
             if mode == "rest" :
                 prev_sol, curr_sol, sim_time = _stabilization(np.zeros(N), np.zeros(N), sim_time, dt)  # Stabilise the solution for the first time step
