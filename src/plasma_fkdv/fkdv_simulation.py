@@ -88,6 +88,7 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
                 prev_sol, curr_sol = analytical_sol(x_array, sim_time - dt), analytical_sol(x_array, sim_time)  # Initial condition is set to the exact solution of the KdV equation
 
         next_sol = _get_next_solution(prev_sol, curr_sol, sim_time, dt)
+        sim_time += dt
 
         if step % verbose == 0:  # only prints and records every verbose number of steps
             sol[recorded_steps] = next_sol
@@ -98,41 +99,57 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
 
         prev_sol, curr_sol = curr_sol, next_sol
         step += 1
-        sim_time += dt
     print("Simulation complete.")
     return sol[:recorded_steps], time_array[:recorded_steps], x_array
 
-# real solution
-def get_real_solutions(exact_wave_fn, x_array, time_array):
-    real_sol = np.zeros((len(time_array), len(x_array)))
-    for i in range(len(time_array)):
-        real_sol[i] = exact_wave_fn(x_array, time_array[i])
-    return real_sol
-
-def find_time_index(time_array, time_stamp):
-    """Return the index of the recorded time closest to ``time_tu``."""
-    if len(time_array) == 0:
-        raise ValueError("Cannot select a time from an empty simulation result.")
-    index = int(np.argmin(np.abs(time_array - time_stamp)))
-    print(f"Index of time step closest to {time_stamp} TU: {index}")
+def find_value_index(array, value):
+    """Return the index of the closest entry to value in an array."""
+    if len(array) == 0:
+        raise ValueError("Cannot select a value from an empty array.")
+    if value < array[0] or value > array[-1]:
+        raise ValueError(f"Value {value} is out of bounds for the array with min {array[0]} and max {array[-1]}.")
+    index = int(np.argmin(np.abs(array - value)))
     return index
 
+def slice_array(u_arr, t_arr, x_arr, x_lim=None, t_lim=None):
+    """Slices the array based on the provided limits for x, t, and u."""
+    if (x_lim is not None and x_lim[0] > x_lim[1]) or (t_lim is not None and t_lim[0] > t_lim[1]):
+        raise ValueError("Limits must be in the form [min, max].")
+
+    if x_lim is not None:
+        x_min_index = find_value_index(x_arr, x_lim[0])
+        x_max_index = find_value_index(x_arr, x_lim[1])
+
+        x_arr = x_arr[x_min_index:x_max_index + 1]
+        u_arr = u_arr[:, x_min_index:x_max_index + 1]
+
+    if t_lim is not None:
+        t_min_index = find_value_index(t_arr, t_lim[0])
+        t_max_index = find_value_index(t_arr, t_lim[1])
+
+        t_arr = t_arr[t_min_index:t_max_index + 1]
+        u_arr = u_arr[t_min_index:t_max_index + 1, :]
+
+    return u_arr, x_arr, t_arr
+
+
 def view_simulation_results(sol, time_array, x_array, time_stamp,
-                            debris_pos = False, view = [23,-110, 0], x_lim = None, t_lim = None,
-                            u_lim = None):
+                            debris_pos = False, view = [23,-110, 0], x_lim = None, t_lim = None):
     """Visualizes the simulation results at a specific time step and as a 3D surface plot."""
-    # Find the index of the time step closest to the specified time_tu
+
+    if x_lim is not None or t_lim is not None:
+        sol, x_array, time_array = slice_array(sol ,time_array, x_array, x_lim=x_lim, t_lim=t_lim)
+
+    t_index = find_value_index(time_array, time_stamp)
+
     print("Plotting simulation results...")
 
     plt.figure(figsize=(15, 7))
 
-    # 2D plot of the solution at the specified time step
-    index = find_time_index(time_array, time_stamp)
-
     ax = plt.subplot(121)
-    ax.plot(x_array, sol[index], label=f"t = {time_array[index]:.2f} TU")
+    ax.plot(x_array, sol[t_index], label=f"t = {time_array[t_index]:.2f} TU")
     #if debris_pos:
-        #ax.axvline(vd_norm * time_array[index], color='red', linestyle='--', label="Debris position")
+        #ax.axvline(vd_norm * time_array[t_index], color='red', linestyle='--', label="Debris position")
     ax.set_xlabel('x axis')
     ax.set_ylabel('U axis')
     ax.legend()
@@ -146,12 +163,6 @@ def view_simulation_results(sol, time_array, x_array, time_stamp,
     ax.set_xlabel('x axis')
     ax.set_ylabel('t axis')
     ax.set_zlabel('U axis')
-    if x_lim is not None:
-        ax.set_xlim(x_lim[0], x_lim[1])
-    if t_lim is not None:
-        ax.set_ylim(t_lim[0], t_lim[1])
-    if u_lim is not None:
-        ax.set_zlim(u_lim[0], u_lim[1])
     ax.view_init(elev=view[0], azim=view[1], roll=view[2])
 
     plt.show()
