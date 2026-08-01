@@ -110,8 +110,7 @@ def find_value_index(array, value):
         raise ValueError("Cannot select a value from an empty array.")
     if value < array[0] or value > array[-1]:
         raise ValueError(f"Value {value} is out of bounds for the array with min {array[0]} and max {array[-1]}.")
-    index = int(np.argmin(np.abs(array - value)))
-    return index
+    return int(np.argmin(np.abs(array - value)))
 
 def slice_array(u_arr, t_arr, x_arr, x_lim=None, t_lim=None):
     """Slices the array based on the provided limits for x, t, and u."""

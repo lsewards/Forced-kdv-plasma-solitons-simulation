@@ -14,7 +14,7 @@ L         = 60.0
 N         = 1024
 dt        = 1e-4
 t_initial = 0
-t_final   = 100
+t_final   = 10
 
 exact_wave_fn = exact.sen_wave_exact
 forcing_fn = exact.sen_forcing_exact
