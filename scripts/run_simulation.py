@@ -1,6 +1,5 @@
 ## Imports & variables
 import numpy as np
-import importlib
 import pandas as pd
 import matplotlib.pyplot as plt
 from src.plasma_fkdv import fkdv_simulation as sim
