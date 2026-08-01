@@ -38,38 +38,9 @@ if __name__ == "__main__":
                                                               mode="analytical",
                                                               forcing_fn=loaded_forcing_fn,
                                                               analytical_sol= loaded_wave_exact,
-                                                              verbose=1000,
+                                                              verbose=100,
                                                               solver=sim.ck_solver
     )
 
-    sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
-                                time_stamp= time_stamp_2d,
-                                view=view,
-                                x_lim=x_lim,
-                                t_lim=t_lim
-    )
 
 
-    if exact_wave_fn is not None:
-        # Compare the numerical solution with the analytical solution at a specific time stamp
-        real_sol = exact.get_real_solutions(loaded_wave_exact, sim_x_array, sim_time_array)
-        view_sim_results = sim.view_simulation_results(real_sol, sim_time_array, sim_x_array,
-                                time_stamp=time_stamp_2d,
-                                view = view,
-                                x_lim = x_lim,
-                                t_lim = t_lim
-        )
-
-        i = sim.find_value_index(sim_time_array, time_stamp_2d)
-
-        plt.figure(figsize=(10, 6))
-        plt.plot(sim_x_array, (real_sol[i] - sim_sol[i]), color='blue')
-        plt.title(f"Comparison of Numerical and Analytical Solutions at {time_stamp_2d} TU")
-        plt.xlabel("x axis")
-        plt.ylabel("Ureal - Uanalytical")
-        plt.grid()
-        plt.show()
-
-        print(f"At time {time_stamp_2d} t")
-        print(f"The Absolute Error : {np.max(np.abs(real_sol[i] - sim_sol[i]))}")
-        print(f"The Relative Error : {np.max(np.abs(real_sol[i] - sim_sol[i])) / np.max(np.abs(real_sol[i]))}")
