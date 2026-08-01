@@ -39,68 +39,76 @@ def fw_solver(prev_sol, curr_sol, f, k, alpha, beta, dt, s = 1.0):
 ## Running the Simulation
 def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analytical_sol=None,
                    forcing_fn=None, stabilising_steps=10, verbose=10, solver = ck_solver):
-    """Runs the simulation for the normalised forced KdV equation using the Crank-Nicolson scheme. The simulation can be run in two modes: 'rest' for starting from rest frame, and 'analyitcal' starting from some exact solution for the kdv equation. The function returns the solution array, time array, and mesh space."""
+    """Runs the simulation for the normalized forced KdV equation using the Chan-Kerkhoven scheme. The simulation can be
+     run in two modes: 'rest' for starting from rest frame, and 'analytical' starting from some exact solution for the
+     kdv equation. The function returns the solution array, time array, and mesh space."""
 
-    def _get_next_solution(previous, current, current_time, dt):
-        """Helper function to compute the next solution using the Crank-Nicolson scheme."""
+    def _get_next_solution(previous, current, current_time, time_step=dt):
+        """Helper function to compute the next solution using the Chan-Kerkhoven scheme."""
         f = forcing_fn(x_array, current_time)
-        next = solver(previous, current, f, k, alpha, beta, dt)
+        next = solver(previous, current, f, k, alpha, beta, time_step)
 
         if not np.all(np.isfinite(next)): # prevent sim from continuing after reaching an overflow error
-          raise FloatingPointError(
-              f"Non-finite solution at time ={current_time:.6g}; "
-              f"max |u|={np.max(np.abs(current)):.3e}")
+          raise FloatingPointError( f"Non-finite solution at time ={current_time:.6g}; " f"max |u|={np.max(np.abs(current)):.3e}")
+
         return next
 
-    def _stabilization(prev_sol, curr_sol, sim_time, dt):
-        """Helper function to stabilise the solution for the first time step to avoid numerical instability."""
-        initial_sol = prev_sol.copy()
+    def _stabilization(previous, current, current_time):
+        """Helper function to stabilize the solution for the first time step to avoid numerical instability."""
+        initial = previous.copy()
         for _ in range(stabilising_steps):
-            prev_sol, curr_sol = curr_sol, _get_next_solution(prev_sol, curr_sol, sim_time, dt / stabilising_steps)
-            sim_time += dt / stabilising_steps
-        #print(f"Stabilisation complete. Time: {sim_time:.2f} TU")
-        if abs((sim_time - dt) - t_initial) > 1e-10:
+            previous, current = current, _get_next_solution( previous, current, current_time, dt / stabilising_steps)
+            current_time += dt / stabilising_steps
+
+        if abs((current_time - dt) - t_initial) > 1e-10:
             raise ValueError("Stabilisation failed to align with initial time.")
         else:
-            return initial_sol, curr_sol, sim_time # The two-level step needs states separated by exactly ``dt``.
+            return initial, current, current_time # The two-level step needs states separated by exactly ``dt``.
 
-    if mode not in ("rest", "analytical"):
-        raise ValueError("Invalid mode. Please choose 'rest' or 'analytical'.")
-    if mode == "analytical" and analytical_sol is None:
-        raise ValueError("Analytical solution function must be provided when mode is 'analytical'.")
-
+    if forcing_fn is None:
+        raise ValueError("Forcing function must be provided.")
 
     x_array = np.linspace(-L, L, N, endpoint=False) # Defining mesh space & wave numbers
     k = 2 * np.pi * np.fft.fftfreq(N, d=(x_array[1] - x_array[0]))  # Wave numbers for FFT , d = dx
 
+    # Calculating number steps simulation will do and pre-allocating arrays accordingly
     total_steps = int(round(abs(t_final - t_initial) / dt))
-    num_allocated_steps = total_steps // verbose
+    num_allocated_steps = total_steps // verbose + 1
+    time_array = np.zeros(num_allocated_steps)
+    sol = np.zeros((num_allocated_steps, N))
 
-    time_array = np.zeros(num_allocated_steps)  # Pre-allocate time array for efficiency
-    sol = np.zeros((num_allocated_steps, N))  # Pre-allocate solution array for efficiency
+    # --- initialize simulation state once, before the stepping loop
+    sim_time = t_initial
+    if mode == "rest":
+        prev_sol, curr_sol, sim_time = _stabilization(np.zeros(N), np.zeros(N), sim_time)
+        step = 1
+    elif mode == "analytical":
+        if analytical_sol is None:
+            raise ValueError("Analytical solution function must be provided when mode is 'analytical'.")
+        prev_sol, curr_sol = analytical_sol(x_array, sim_time - dt), analytical_sol(x_array, sim_time)
+        step = 0
+    else:
+        raise ValueError("Invalid mode. Please choose 'rest' or 'analytical'.")
 
-    step = 1  # Start from the second time step since the first two are already set
-    recorded_steps = 0  # Counter for the number of recorded steps
-    sim_time = t_initial  # start
-    while step <= total_steps:
-        if sim_time == t_initial: # Initialising simulation
-            if mode == "rest" :
-                prev_sol, curr_sol, sim_time = _stabilization(np.zeros(N), np.zeros(N), sim_time, dt)  # Stabilise the solution for the first time step
-            else:
-                prev_sol, curr_sol = analytical_sol(x_array, sim_time - dt), analytical_sol(x_array, sim_time)  # Initial condition is set to the exact solution of the KdV equation
+    sol[0] = curr_sol
+    time_array[0] = sim_time
+    recorded_steps = 1  # Counter for the number of recorded steps
 
-        next_sol = _get_next_solution(prev_sol, curr_sol, sim_time, dt)
+    # ------- marching initial solution chosen forwards in time using the Chan-Kerkhoven scheme -------
+    while step < total_steps:
+        next_sol = _get_next_solution( prev_sol, curr_sol, sim_time)
         sim_time += dt
+        step += 1
 
-        if step % verbose == 0:  # only prints and records every verbose number of steps
+        if step % verbose == 0:  # only records every verbose number of steps
             sol[recorded_steps] = next_sol
             time_array[recorded_steps] = sim_time
-            recorded_steps += 1  # Increment the recorded steps counter
-            print(f"Time: {sim_time:.2f} TU")
+            recorded_steps += 1
+            #print(f"Time: {sim_time:.2f} TU")
             #print(f"Max value of solution: {np.max(sol[recorded_steps - 1]):.4f}, Min value of solution: {np.min(sol[recorded_steps - 1]):.4f}")
 
         prev_sol, curr_sol = curr_sol, next_sol
-        step += 1
+
     print("Simulation complete.")
     return sol[:recorded_steps], time_array[:recorded_steps], x_array
 
@@ -133,9 +141,8 @@ def slice_array(u_arr, t_arr, x_arr, x_lim=None, t_lim=None):
 
     return u_arr, x_arr, t_arr
 
-
-def view_simulation_results(sol, time_array, x_array, time_stamp,
-                            debris_pos = False, view = [23,-110, 0], x_lim = None, t_lim = None):
+def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = False,
+                            view = [23,-110, 0], x_lim = None, t_lim = None):
     """Visualizes the simulation results at a specific time step and as a 3D surface plot."""
 
     if x_lim is not None or t_lim is not None:
