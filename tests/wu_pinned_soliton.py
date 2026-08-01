@@ -10,11 +10,11 @@ alpha        = -3/2 # Nonlinearity ( 1.0051)
 beta         = -1/6 # Dispersion (0.4925)
 
 # -------- Simulation parameters ---------
-L         = 70.0
+L         = 80.0
 N         = 1024
-dt        = 1e-4
+dt        = 1e-5
 t_initial = 0
-t_final   = 10
+t_final   = 2
 
 exact_wave_fn = exact.wu_wave_exact
 forcing_fn = exact.wu_forcing_exact
@@ -37,6 +37,7 @@ if __name__ == "__main__":
     loaded_wave_exact = partial(exact_wave_fn, *wave_args)
 
     #Rest simulationm
+
     num_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, t_initial, t_final, dt, alpha, beta,
                                                               mode="rest",
                                                               forcing_fn=loaded_forcing_fn,
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     )
 
     # analytical simulation
+
     anal_sol, _, _ = sim.run_simulation(L, N, t_initial, t_final, dt, alpha, beta,
                                                               mode="analytical",
                                                               forcing_fn=loaded_forcing_fn,
@@ -59,20 +61,21 @@ if __name__ == "__main__":
                                                               verbose=1000,
                                                               solver=sim.ck_solver
     )
+    
     sim.view_simulation_results(anal_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
                                 view=view,
                                 x_lim=x_lim,
                                 t_lim=t_lim
     )
-
+    
     i = sim.find_value_index(sim_time_array, time_stamp_2d)
 
     plt.figure(figsize=(10, 6))
     plt.plot(sim_x_array, (num_sol[i] - anal_sol[i]), color='blue')
     plt.title(f"Comparison of Numerical and Analytical Solutions at {time_stamp_2d} TU")
     plt.xlabel("x axis")
-    plt.ylabel("Ureal - Uanalytical")
+    plt.ylabel("Urest - Uanalytical")
     plt.grid()
     plt.show()
 
