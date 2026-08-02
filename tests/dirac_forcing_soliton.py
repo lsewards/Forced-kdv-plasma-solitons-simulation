@@ -29,11 +29,11 @@ alpha        = -3/2 # Nonlinearity ( 1.0051)
 beta         = -1/6 # Dispersion (0.4925)
 
 # -------- Simulation parameters ---------
-L         = 150.0
-N         = 1024
-dt        = 5e-5
+L         = 250.0
+N         = 2000
+dt        = 1e-4
 t_initial = -1
-t_final   = 16
+t_final   =  60 * 15
 
 # -------- Plotting params -----------------
 view = [23, -110, 0]  # 3D plot view angles
@@ -58,28 +58,29 @@ if __name__ == "__main__":
                                                               verbose=1000,
                                                               solver=sim.ck_solver
     )
-    sim_sol, sim_x_array, sim_time_array = sim.slice_array(sim_x_array, sim_sol, sim_time_array,
+    sim_sol, sim_time_array, sim_x_array = sim.slice_array(sim_sol, sim_time_array, sim_x_array,
                                                            x_lim=x_lim,
                                                            t_lim=t_lim
     )
 
     plt.figure(figsize=(10, 6))
-    for time in range(15):
-        i = find_value_index(sim_time_array, time)
-        plt.plot(sim_x_array, sim_sol[i] + 1 * time)
+    for offset in range(16):
+        i = find_value_index(sim_time_array, offset * 60)
+        plt.plot(sim_x_array, sim_sol[i] + 1 * offset)
     plt.title(f"U")
     plt.xlabel("x axis")
     plt.ylabel("U")
     plt.grid()
     plt.show()
 
+    dirac_plot = False
+    if dirac_plot is True:
+        dirac = scipy_dirac_forcing_exact(sim_x_array, 0)
 
-    dirac = scipy_dirac_forcing_exact(sim_x_array, 0)
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(sim_x_array, dirac, color='blue')
-    plt.title(f"U")
-    plt.xlabel("x axis")
-    plt.ylabel("U")
-    plt.grid()
-    plt.show()
+        plt.figure(figsize=(10, 6))
+        plt.plot(sim_x_array, dirac, color='blue')
+        plt.title(f"U")
+        plt.xlabel("x axis")
+        plt.ylabel("U")
+        plt.grid()
+        plt.show()

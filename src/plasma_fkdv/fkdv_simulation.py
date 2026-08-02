@@ -53,12 +53,12 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
 
         return next
 
-    def _stabilization(previous, current, current_time):
+    def _stabilization(previous, current, current_time , time_step=dt):
         """Helper function to stabilize the solution for the first time step to avoid numerical instability."""
         initial = previous.copy()
         for _ in range(stabilising_steps):
-            previous, current = current, _get_next_solution( previous, current, current_time, dt / stabilising_steps)
-            current_time += dt / stabilising_steps
+            previous, current = current, _get_next_solution( previous, current, current_time, time_step / stabilising_steps)
+            current_time += time_step / stabilising_steps
 
         if abs((current_time - dt) - t_initial) > 1e-10:
             raise ValueError("Stabilisation failed to align with initial time.")
@@ -139,14 +139,14 @@ def slice_array(u_arr, t_arr, x_arr, x_lim=None, t_lim=None):
         t_arr = t_arr[t_min_index:t_max_index + 1]
         u_arr = u_arr[t_min_index:t_max_index + 1, :]
 
-    return u_arr, x_arr, t_arr
+    return u_arr, t_arr, x_arr
 
 def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = False,
                             view = [23,-110, 0], x_lim = None, t_lim = None):
     """Visualizes the simulation results at a specific time step and as a 3D surface plot."""
 
     if x_lim is not None or t_lim is not None:
-        sol, x_array, time_array = slice_array(sol ,time_array, x_array, x_lim=x_lim, t_lim=t_lim)
+        sol, time_array, x_array = slice_array(sol, time_array, x_array, x_lim=x_lim, t_lim=t_lim)
 
     t_index = find_value_index(time_array, time_stamp)
 
