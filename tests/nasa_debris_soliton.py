@@ -18,18 +18,18 @@ region = "Low LEO"  # Ionosphere region to simulate
 #-------  Physical parameters ------------
 alpha        = 1.0051 # Nonlinearity ( 1.0051)
 beta         = 0.4925 # Dispersion (0.4925)
-debris_size  = 0.5
-vd           = 7.51
+debris_size  = 0.1
+vd           = None
 np_potential = -1.77
 G            = None
 
 
 # -------- Simulation parameters ---------
-L         = 200.0
+L         = 2000.0
 N         = 1024
 dt        = 1e-4
 t_initial =  0
-t_final   =  10
+t_final   =  200
 
 mode = "rest"  # "rest" for starting from rest frame, "analytical" for starting from an exact solution
 
@@ -40,7 +40,7 @@ wave_args = None
 forcing_args = None
 
 # -------- Plotting params -----------------
-time_stamp_2d = 0.25  # time stamp for the 2D plot in TU
+time_stamp_2d = 100  # time stamp for the 2D plot in TU
 view = [23, -110, 0]  # 3D plot view angles
 x_lim = None
 t_lim = None

@@ -10,7 +10,7 @@ alpha        = -3/2 # Nonlinearity ( 1.0051)
 beta         = -1/6 # Dispersion (0.4925)
 
 # -------- Simulation parameters ---------
-L         = 100.0
+L         = 70.0
 N         = 2000
 dt        = 1e-4
 t_initial = 0
@@ -26,8 +26,8 @@ wave_args = [ a, k]
 forcing_args = [ b1, k]
 
 # -------- Plotting params -----------------
-time_stamp_2d = 99  # time stamp for the 2D plot in TU
-view = [23, -110, 0]  # 3D plot view angles
+time_stamp_2d = .5  # time stamp for the 2D plot in TU
+view = [40, -90, 0]  # 3D plot view angles
 x_lim = [-40,40]
 t_lim = None
 
@@ -71,12 +71,11 @@ if __name__ == "__main__":
 
 
     #Rest simulationm
-    '''
     num_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, t_initial, t_final, dt, alpha, beta,
                                                               mode="rest",
                                                               forcing_fn=loaded_forcing_fn,
                                                               stabilising_steps= 10,
-                                                              verbose=1000,
+                                                              verbose=100,
                                                               solver=sim.ck_solver
     )
     sim.view_simulation_results(num_sol, sim_time_array, sim_x_array,
@@ -85,4 +84,3 @@ if __name__ == "__main__":
                                 x_lim=x_lim,
                                 t_lim=t_lim
     )
-    '''

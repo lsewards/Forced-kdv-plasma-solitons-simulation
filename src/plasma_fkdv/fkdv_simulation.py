@@ -2,6 +2,7 @@
 import numpy as np
 from numpy.fft import rfft, irfft
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 def ck_solver(prev_sol, curr_sol, f, k, alpha, beta, dt):
     """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain."""
@@ -50,7 +51,6 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
 
         if not np.all(np.isfinite(next)): # prevent sim from continuing after reaching an overflow error
           raise FloatingPointError( f"Non-finite solution at time ={current_time:.6g}; " f"max |u|={np.max(np.abs(current)):.3e}")
-
         return next
 
     def _stabilization(previous, current, current_time , time_step=dt):
@@ -95,19 +95,19 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
     recorded_steps = 1  # Counter for the number of recorded steps
 
     # ------- marching initial solution chosen forwards in time using the Chan-Kerkhoven scheme -------
-    while step < total_steps:
-        next_sol = _get_next_solution( prev_sol, curr_sol, sim_time)
-        sim_time += dt
-        step += 1
+    with tqdm(total = total_steps, initial = step, desc= "simulating") as pbar:
+        while step < total_steps:
+            next_sol = _get_next_solution( prev_sol, curr_sol, sim_time)
+            sim_time += dt
+            step += 1
+            pbar.update(1)
 
-        if step % verbose == 0:  # only records every verbose number of steps
-            sol[recorded_steps] = next_sol
-            time_array[recorded_steps] = sim_time
-            recorded_steps += 1
-            #print(f"Time: {sim_time:.2f} TU")
-            #print(f"Max value of solution: {np.max(sol[recorded_steps - 1]):.4f}, Min value of solution: {np.min(sol[recorded_steps - 1]):.4f}")
+            if step % verbose == 0:  # only records every verbose number of steps
+                sol[recorded_steps] = next_sol
+                time_array[recorded_steps] = sim_time
+                recorded_steps += 1
 
-        prev_sol, curr_sol = curr_sol, next_sol
+            prev_sol, curr_sol = curr_sol, next_sol
 
     print("Simulation complete.")
     return sol[:recorded_steps], time_array[:recorded_steps], x_array
@@ -141,7 +141,7 @@ def slice_array(u_arr, t_arr, x_arr, x_lim=None, t_lim=None):
 
     return u_arr, t_arr, x_arr
 
-def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = False,
+def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = False, vd_norm = 1.0,
                             view = [23,-110, 0], x_lim = None, t_lim = None):
     """Visualizes the simulation results at a specific time step and as a 3D surface plot."""
 
@@ -156,8 +156,8 @@ def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = F
 
     ax = plt.subplot(121)
     ax.plot(x_array, sol[t_index], label=f"t = {time_array[t_index]:.2f} TU")
-    #if debris_pos:
-        #ax.axvline(vd_norm * time_array[t_index], color='red', linestyle='--', label="Debris position")
+    if debris_pos:
+        ax.axvline(vd_norm * time_array[t_index], color='red', linestyle='--', label="Debris position")
     ax.set_xlabel('x axis')
     ax.set_ylabel('U axis')
     ax.legend()

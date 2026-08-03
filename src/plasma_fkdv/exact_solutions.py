@@ -64,3 +64,10 @@ def sen_wave_exact(A, G, x, t):
 
 def sen_forcing_exact(A, G, x, t):
     return A * G * sech_sqrd( np.sqrt(A / 6) * (x - ((2 * A - 3 * G ) /6) * t) )
+
+def dirac_forcing_exact(amplitude, x, t, center = 0):
+    dx = x[1] - x[0]
+    i = np.argmin(np.abs(x - center))
+    val = np.zeros_like(x)
+    val[i] = amplitude / dx
+    return val
