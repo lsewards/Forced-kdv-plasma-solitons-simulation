@@ -52,13 +52,7 @@ if __name__ == "__main__":
     df_ionosphere = pd.read_excel(PROJECT_ROOT / 'data' / 'Ionosphere_prop.xltx')
     plasma_prop = env.initialise_ionosphere_region(df_ionosphere, region)
 
-    # Normalizes plasma properties
-    debye_length_m = plasma_prop["Debye Length"] * 1e-2
-    vi_km_s = plasma_prop["Ion Acoustic Velocity"]
-    TU = debye_length_m / (vi_km_s * 1e3)
-
-    forcing_args = env.get_forcing_space_debris_args(plasma_prop, debris_size, debye_length_m, vi_km_s,
-                                                     np_potential, vd, G)
+    forcing_args, TU, vd_norm = env.get_forcing_space_debris_args(plasma_prop, debris_size, np_potential, vd, G)
     loaded_forcing_fn = partial(forcing_fn, *forcing_args)
 
     if exact_wave_fn is not None:
@@ -79,7 +73,7 @@ if __name__ == "__main__":
                                                               analytical_sol= loaded_wave_exact,
                                                               stabilising_steps=10,
                                                               verbose=1000,
-                                                              solver=sim.ck_solver
+                                                              maker_solver=sim.make_ck_solver
     )
 
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,

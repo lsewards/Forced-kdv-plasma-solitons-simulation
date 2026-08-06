@@ -44,7 +44,7 @@ if __name__ == "__main__":
                                                               forcing_fn=loaded_forcing_fn,
                                                               analytical_sol= loaded_wave_exact,
                                                               verbose=1000,
-                                                              solver=sim.ck_solver
+                                                              maker_solver=sim.make_ck_solver
     )
     
     sim.view_simulation_results(anal_sol, sim_time_array, sim_x_array,
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                                                               forcing_fn=loaded_forcing_fn,
                                                               stabilising_steps= 10,
                                                               verbose=100,
-                                                              solver=sim.ck_solver
+                                                              solver=sim.make_ck_solver
     )
     sim.view_simulation_results(num_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,

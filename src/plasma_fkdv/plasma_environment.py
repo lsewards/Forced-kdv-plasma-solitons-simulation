@@ -2,6 +2,16 @@ import numpy as np
 from scipy.optimize import brentq
 from .constants import __me__, __mh__, __mo__
 
+def initialise_ionosphere_region(df, region):
+    """ takes a dataframe of ionospheric properties and pulls the associated properties for a given region.
+    making the necessary calculations required to run simulation CURRENTLY NOT ABLE TO HANDLE GEO"""
+
+    # Pulls property name and values into a list and numpy array respectively
+    value = df[region].to_numpy()
+    properties = df["Properties"].to_list()
+
+    return dict(zip(properties, value))   # Creates a dictionary of the properties and values for the given region
+
 def normalized_plasma_potential(a, debye_length, mass_ratio, potential_radius=None):
     """Calculates normalized plasma potential; ``a`` and ``debye_length`` must use the same length unit."""
     def _eqn_surface_potential(x, mass_ratio, s, a):
@@ -24,14 +34,19 @@ def forcing_space_debris(np_potential, vd, G, x, time):
     """
     return np_potential * np.exp(-1 * (((x - vd * time ) / G) ** 2))
 
-def get_forcing_space_debris_args(plasma_prop, debris_size, debye_length_m, vi_km_s, np_potential, vd, G):
+def get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, G):
     """ Returns a list of pre-defined parameters for the forcing term calculation."""
+
+    # Normalizes plasma properties
+    debye_length_m = plasma_prop["Debye Length"] * 1e-2
+    vi_km_s = plasma_prop["Ion Acoustic Velocity"]
+    TU = debye_length_m / (vi_km_s * 1e3)
 
     # Unless directly specified, uses default values from spreadsheet or calculation
     if vd is None:
         vd = plasma_prop["Debris Velocity Circular Orbit"]  # Debris velocity in km/s
     if G is None:
-        G = debris_size / debye_length_m  # Normalised forcing width
+        G = debris_radius / debye_length_m  # Normalised forcing width
     if np_potential is None:
         # Determine the ion species and set the corresponding ion mass and mass ratio for the plasma region
         if plasma_prop["Ion Species"] == "O":
@@ -41,19 +56,9 @@ def get_forcing_space_debris_args(plasma_prop, debris_size, debye_length_m, vi_k
         else:
             raise ValueError("Ion species not recognised. Please use 'O' for Oxygen or 'H' for Hydrogen.")
 
-        np_potential = normalized_plasma_potential(debris_size, debye_length_m, mass_ratio)
+        np_potential = normalized_plasma_potential(debris_radius, debye_length_m, mass_ratio)
         print(f'Calculated normalized plasma potential: {np_potential}')
 
     vd_norm = vd / vi_km_s  # Normalised debris velocity
 
-    return [np_potential, vd_norm, G]
-
-def initialise_ionosphere_region(df, region):
-    """ takes a dataframe of ionospheric properties and pulls the associated properties for a given region.
-    making the necessary calculations required to run simulation CURRENTLY NOT ABLE TO HANDLE GEO"""
-
-    # Pulls property name and values into a list and numpy array respectively
-    value = df[region].to_numpy()
-    properties = df["Properties"].to_list()
-
-    return dict(zip(properties, value))   # Creates a dictionary of the properties and values for the given region
+    return [np_potential, vd_norm, G] , TU, vd_norm

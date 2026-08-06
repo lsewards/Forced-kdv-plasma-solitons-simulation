@@ -1,53 +1,54 @@
-
 import numpy as np
 from numpy.fft import rfft, irfft
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-def ck_solver(prev_sol, curr_sol, f, k, alpha, beta, dt):
+def make_ck_solver( N, dx, alpha, beta, dt):
     """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain."""
 
-    k_fs = k[:len(k) // 2 + 1] # slicing k down 1024 (real) = 1024 // 2 + 1 (fourier space )
+    k = 2 * np.pi * np.fft.rfftfreq(N, d=dx)  # Wave numbers for FFT , d = dx
 
     # pre-calculating coefficients
-    _ck_beta_fs = dt * beta * 1j * (k_fs ** 3)
-    _ck_z_fs = dt * 1j * k_fs
+    b = dt * beta * 1j * (k ** 3)
+    c0 = 1.0 / (1.0 - b)
+    c1 = ( 1.0 + b ) * c0
+    z = c0 * dt * 1j * k
 
-    # Fourier transform of the last solution, current solution, and forcing term
-    fft_prev = rfft(prev_sol)
-    fft_sqrd_curr = rfft(curr_sol ** 2)
-    fft_f = rfft(f)
+    def solver(prev_sol, curr_sol, f):
+        """Compute the next solution using the Chan-Kerkhoven scheme."""
+        return irfft(c1 * rfft(prev_sol) - alpha * z * rfft(curr_sol ** 2) + z * rfft(f))
+    return solver
 
-    return irfft( ( 1/(1 - _ck_beta_fs) ) * ( (1 + _ck_beta_fs)*fft_prev - alpha*_ck_z_fs*fft_sqrd_curr + _ck_z_fs*fft_f ) )
-
-def fw_solver(prev_sol, curr_sol, f, k, alpha, beta, dt, s = 1.0):
+def make_fw_solver( N, dx, alpha, beta, dt):
     """Use the Fornberg & Whitham scheme to solve the forced KdV equation on a periodic domain."""
 
-    k_fs = k[:len(k) // 2 + 1]
+    k = 2 * np.pi * np.fft.rfftfreq(N, d=dx)
 
-    fft_f = rfft(f)
-    fft_curr = rfft(curr_sol)
+    def solver(prev_sol, curr_sol, f):
 
-    ifft_f_ik = irfft(fft_f * 1j * k_fs)
-    ifft_curr_ik = irfft(fft_curr * 1j * k_fs)
-    ifft_curr_ik_3 = irfft(fft_curr * (1j ** 3) * (k_fs ** 3))
+        ifft_f_ik = irfft(rfft(f) * 1j * k)
+        ifft_curr_ik = irfft(rfft(curr_sol) * 1j * k)
+        ifft_curr_ik_3 = irfft(rfft(curr_sol) * (1j ** 3) * (k ** 3))
 
-    return (prev_sol
-            - 2 * dt * alpha * curr_sol * s * ifft_curr_ik
-            - 2 * dt * beta * (s**3) * ifft_curr_ik_3
-            + dt * s * ifft_f_ik)
+        return  (prev_sol
+            - 2 * dt * alpha * curr_sol * ifft_curr_ik
+            - 2 * dt * beta * ifft_curr_ik_3
+            + dt  * ifft_f_ik)
+
+    return solver
 
 ## Running the Simulation
 def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analytical_sol=None,
-                   forcing_fn=None, stabilising_steps=10, verbose=10, solver = ck_solver):
+                   forcing_fn=None, stabilising_steps=10, verbose=10, solver_maker = make_ck_solver,
+                   debris_args = None):
     """Runs the simulation for the normalized forced KdV equation using the Chan-Kerkhoven scheme. The simulation can be
      run in two modes: 'rest' for starting from rest frame, and 'analytical' starting from some exact solution for the
      kdv equation. The function returns the solution array, time array, and mesh space."""
 
-    def _get_next_solution(previous, current, current_time, time_step=dt):
+    def _get_next_solution(solver, previous, current, current_time):
         """Helper function to compute the next solution using the Chan-Kerkhoven scheme."""
         f = forcing_fn(x_array, current_time)
-        next = solver(previous, current, f, k, alpha, beta, time_step)
+        next = solver(previous, current, f)
 
         if not np.all(np.isfinite(next)): # prevent sim from continuing after reaching an overflow error
           raise FloatingPointError( f"Non-finite solution at time ={current_time:.6g}; " f"max |u|={np.max(np.abs(current)):.3e}")
@@ -56,8 +57,9 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
     def _stabilization(previous, current, current_time , time_step=dt):
         """Helper function to stabilize the solution for the first time step to avoid numerical instability."""
         initial = previous.copy()
+        stab_solver = solver_maker(N, dx, alpha, beta, time_step / stabilising_steps)
         for _ in range(stabilising_steps):
-            previous, current = current, _get_next_solution( previous, current, current_time, time_step / stabilising_steps)
+            previous, current = current, _get_next_solution(stab_solver, previous, current, current_time)
             current_time += time_step / stabilising_steps
 
         if abs((current_time - dt) - t_initial) > 1e-10:
@@ -69,7 +71,14 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
         raise ValueError("Forcing function must be provided.")
 
     x_array = np.linspace(-L, L, N, endpoint=False) # Defining mesh space & wave numbers
-    k = 2 * np.pi * np.fft.fftfreq(N, d=(x_array[1] - x_array[0]))  # Wave numbers for FFT , d = dx
+    dx = x_array[1] - x_array[0]
+
+    if debris_args is not None and debris_args[-1] / dx < 8:
+        print("Gaussian isnt well defined by chosen N & L")
+    if debris_args is not None and debris_args[1] * t_final < L:
+        print("L is too small, the forcing function will not be fully contained in the domain for the entire simulation.")
+
+    sim_solver = solver_maker( N, dx, alpha, beta, dt)
 
     # Calculating number steps simulation will do and pre-allocating arrays accordingly
     total_steps = int(round(abs(t_final - t_initial) / dt))
@@ -95,9 +104,9 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
     recorded_steps = 1  # Counter for the number of recorded steps
 
     # ------- marching initial solution chosen forwards in time using the Chan-Kerkhoven scheme -------
-    with tqdm(total = total_steps, initial = step, desc= "simulating") as pbar:
+    with tqdm(total = total_steps, initial = step, desc= "Simulating") as pbar:
         while step < total_steps:
-            next_sol = _get_next_solution( prev_sol, curr_sol, sim_time)
+            next_sol = _get_next_solution( sim_solver, prev_sol, curr_sol, sim_time)
             sim_time += dt
             step += 1
             pbar.update(1)

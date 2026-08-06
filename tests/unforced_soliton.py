@@ -32,8 +32,8 @@ if __name__ == "__main__":
                                                               forcing_fn=forcing_fn,
                                                               analytical_sol=exact_wave_fn,
                                                               verbose=10,
-                                                              solver=sim.ck_solver
-    )
+                                                              solver_maker=sim.make_ck_solver
+                                                              )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
                                 view=view,
