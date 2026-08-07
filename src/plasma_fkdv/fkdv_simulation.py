@@ -1,7 +1,9 @@
+import inspect
 import numpy as np
 from numpy.fft import rfft, irfft
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from pathlib import Path
 
 def make_ck_solver( N, dx, alpha, beta, dt):
     """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain."""
@@ -126,7 +128,7 @@ def find_value_index(array, value):
     if len(array) == 0:
         raise ValueError("Cannot select a value from an empty array.")
     if value < array[0] or value > array[-1]:
-        raise ValueError(f"Value {value} is out of bounds for the array with min {array[0]} and max {array[-1]}.")
+        print(f"Warning: Value {value} is outside range {array[0]} to {array[-1]}. Clipping to the nearest boundary.")
     return int(np.argmin(np.abs(array - value)))
 
 def slice_array(u_arr, t_arr, x_arr, x_lim=None, t_lim=None):
@@ -151,13 +153,17 @@ def slice_array(u_arr, t_arr, x_arr, x_lim=None, t_lim=None):
     return u_arr, t_arr, x_arr
 
 def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = False, vd_norm = 1.0,
-                            view = [23,-110, 0], x_lim = None, t_lim = None):
+                            view = [23,-110, 0], x_lim = None, t_lim = None, plot_name = None):
     """Visualizes the simulation results at a specific time step and as a 3D surface plot."""
+
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+    N = len(x_array)
 
     if x_lim is not None or t_lim is not None:
         sol, time_array, x_array = slice_array(sol, time_array, x_array, x_lim=x_lim, t_lim=t_lim)
 
     t_index = find_value_index(time_array, time_stamp)
+
 
     print("Plotting simulation results...")
 
@@ -181,5 +187,20 @@ def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = F
     ax.set_ylabel('t axis')
     ax.set_zlabel('U axis')
     ax.view_init(elev=view[0], azim=view[1], roll=view[2])
+
+    plt.tight_layout()
+
+    if plot_name is not None:
+        caller_file = Path(inspect.stack()[1].filename).resolve()
+        if "tests" in caller_file.parts:
+            plots_dir = PROJECT_ROOT / "tests" / "plots"
+        elif "scripts" in caller_file.parts:
+            plots_dir = PROJECT_ROOT / "scripts" / "plots"
+        else:
+            plots_dir = PROJECT_ROOT / "plots"
+        plots_dir.mkdir(parents=True, exist_ok=True)
+        stem = plot_name[:-4] if plot_name.endswith(".png") else plot_name
+        plt.savefig(plots_dir / f"N{len(x_array)}{stem}.png", dpi='figure')
+        print(f"Plot saved as {plots_dir / f'N{N}{stem}.png'}")
 
     plt.show()

@@ -33,10 +33,11 @@ if __name__ == "__main__":
                                                               analytical_sol=exact_wave_fn,
                                                               verbose=10,
                                                               solver_maker=sim.make_ck_solver
-                                                              )
+    )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
                                 view=view,
                                 x_lim=x_lim,
-                                t_lim=t_lim
+                                t_lim=t_lim,
+                                plot_name= "unforced_soliton_results.png"
     )

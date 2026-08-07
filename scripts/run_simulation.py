@@ -27,7 +27,7 @@ G            = None
 
 # -------- Simulation parameters ---------
 L         = 2000.0
-N         = 6000
+N         = 1024
 dt        = 1e-4
 t_initial = 0
 t_final   = 150
@@ -58,20 +58,21 @@ if __name__ == "__main__":
                                                               mode='rest',
                                                               forcing_fn=loaded_forcing_fn,
                                                               analytical_sol= loaded_wave_exact,
-                                                              stabilising_steps=100,
-                                                              verbose=1000,
+                                                              stabilising_steps=5,
+                                                              verbose=100,
                                                               solver_maker=sim.make_ck_solver,
                                                               debris_args=debris_args,
     )
-
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
                                 debris_pos=display_debris_pos,
                                 vd_norm = vd_norm,
                                 view=view,
                                 x_lim=x_lim,
-                                t_lim=t_lim
+                                t_lim=t_lim,
+                                plot_name=f"_{region.replace(' ', '_')}_a_{debris_radius}_np_potential_{np_potential}.png"
     )
+
 
     print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')
     print(f'Minimum amplitude of the wave: {np.min(sim_sol)}')

@@ -29,13 +29,13 @@ G             = None
 
 # -------- Simulation parameters ---------
 L         = 600
-N         = 8000
+N         = 53000
 dt        = 1e-4
 t_initial = 0
-t_final   = 1400
+t_final   = 2
 
 # -------- Plotting params -----------------
-time_stamp_2d = 1399 # time stamp for the 2D plot in TU
+time_stamp_2d = 1# time stamp for the 2D plot in TU
 view = [23, -110, 0]  # 3D plot view angles
 x_lim = None
 t_lim = None
@@ -60,7 +60,6 @@ if __name__ == "__main__":
                                                               verbose=1000,
                                                               solver_maker=sim.make_ck_solver
     )
-
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
                                 debris_pos=display_debris_pos,

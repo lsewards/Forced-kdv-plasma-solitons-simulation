@@ -40,7 +40,7 @@ if __name__ == "__main__":
                                                               forcing_fn=loaded_forcing_fn,
                                                               analytical_sol= loaded_wave_exact,
                                                               verbose=10,
-                                                              maker_solver=sim.make_ck_solver
+                                                              solver_maker=sim.make_ck_solver
     )
 
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,

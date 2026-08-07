@@ -42,7 +42,7 @@ if __name__ == "__main__":
                                                               mode="rest",
                                                               forcing_fn=loaded_forcing_fn,
                                                               verbose=1000,
-                                                              maker_solver=sim.make_ck_solver
+                                                              solver_maker=sim.make_ck_solver
     )
     sim_sol, sim_time_array, sim_x_array = sim.slice_array(sim_sol, sim_time_array, sim_x_array,
                                                            x_lim=x_lim,
