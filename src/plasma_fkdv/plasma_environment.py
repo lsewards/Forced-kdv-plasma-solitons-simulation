@@ -34,6 +34,21 @@ def forcing_space_debris(np_potential, vd, G, x, time):
     """
     return np_potential * np.exp(-1 * (((x - vd * time ) / G) ** 2))
 
+def predict_soliton_type(vd_norm, vi, alpha, beta, np_potential, G):
+
+    A = abs(np_potential) * G * np.sqrt(np.pi)  # area of the gaussian forcing disturbance
+    c0 = ( (3 * (alpha/2)**2 * A**2) / 16 * beta ) ** 1/3
+
+    v_sup = (1 + c0) / vi
+    v_sub = (1 - c0) / vi
+
+    if vd_norm < v_sub:
+        return "Subsonic"
+    elif v_sub < vd_norm < v_sup:
+        return "Transonic"
+    else:
+        return "Supersonic"
+   
 def get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, G):
     """ Returns a list of pre-defined parameters for the forcing term calculation."""
 

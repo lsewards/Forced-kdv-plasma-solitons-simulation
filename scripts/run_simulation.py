@@ -54,13 +54,16 @@ if __name__ == "__main__":
     else:
         loaded_wave_exact = exact_wave_fn
 
+    soliton_type = env.predict_soliton_type(vd_norm, plasma_prop["Ion Acoustic Velocity"], alpha, beta, np_potential, debris_args[2])
+    print(f"Predicted soliton type: {soliton_type} (vd_norm = {vd_norm:.3f})")
+
     # Run the simulation and view results
     sim_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, t_initial, t_final, dt, alpha, beta,
                                                               mode='rest',
                                                               forcing_fn=loaded_forcing_fn,
                                                               analytical_sol= loaded_wave_exact,
                                                               stabilising_steps=5,
-                                                              verbose=100,
+                                                              verbose=1000,
                                                               solver_maker=sim.make_ck_solver,
                                                               debris_args=debris_args,
                                                               dealias=dealias,
