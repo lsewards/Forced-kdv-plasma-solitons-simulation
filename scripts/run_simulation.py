@@ -26,16 +26,17 @@ np_potential = -1.77
 G            = None
 
 # -------- Simulation parameters ---------
-L         = 2000.0
-N         = 1024
+L         = 1500.0
+N         = 13000
 dt        = 1e-4
 t_initial = 0
 t_final   = 150
+dealias   = True  # Apply the 2/3 rule to de-alias the nonlinear term
 
 # -------- Plotting params -----------------
 time_stamp_2d = 149.9 # time stamp for the 2D plot in TU
 view = [23, -110, 0]  # 3D plot view angles
-x_lim = [-1500, 1500]
+x_lim = None
 t_lim = None
 display_debris_pos = True
 
@@ -62,6 +63,7 @@ if __name__ == "__main__":
                                                               verbose=100,
                                                               solver_maker=sim.make_ck_solver,
                                                               debris_args=debris_args,
+                                                              dealias=dealias,
     )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,

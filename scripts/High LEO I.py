@@ -29,10 +29,10 @@ G             = None
 
 # -------- Simulation parameters ---------
 L         = 600
-N         = 53000
+N         = 10000
 dt        = 1e-4
 t_initial = 0
-t_final   = 2
+t_final   = 1400
 
 # -------- Plotting params -----------------
 time_stamp_2d = 1# time stamp for the 2D plot in TU

@@ -5,10 +5,18 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
 
-def make_ck_solver( N, dx, alpha, beta, dt):
-    """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain."""
+def _two_thirds_mask(k):
+    """Boolean mask over rfft wavenumbers implementing the 2/3 rule: wavenumbers above 2/3
+    of the Nyquist wavenumber are zeroed so that aliasing errors from quadratic nonlinear
+    terms fold into the discarded band instead of contaminating the resolved modes."""
+    return k <= (2.0 / 3.0) * k[-1]
+
+def make_ck_solver( N, dx, alpha, beta, dt, dealias=False):
+    """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain.
+    If dealias is True, the 2/3 rule is applied to the nonlinear term to remove aliasing errors."""
 
     k = 2 * np.pi * np.fft.rfftfreq(N, d=dx)  # Wave numbers for FFT , d = dx
+    mask = _two_thirds_mask(k) if dealias else None
 
     # pre-calculating coefficients
     b = dt * beta * 1j * (k ** 3)
@@ -18,22 +26,34 @@ def make_ck_solver( N, dx, alpha, beta, dt):
 
     def solver(prev_sol, curr_sol, f):
         """Compute the next solution using the Chan-Kerkhoven scheme."""
-        return irfft(c1 * rfft(prev_sol) - alpha * z * rfft(curr_sol ** 2) + z * rfft(f))
+        curr_spec = rfft(curr_sol)
+        if mask is not None:
+            curr_spec = curr_spec * mask
+        nonlinear_spec = rfft(irfft(curr_spec) ** 2)
+        if mask is not None:
+            nonlinear_spec = nonlinear_spec * mask
+        return irfft(c1 * rfft(prev_sol) - alpha * z * nonlinear_spec + z * rfft(f))
     return solver
 
-def make_fw_solver( N, dx, alpha, beta, dt):
-    """Use the Fornberg & Whitham scheme to solve the forced KdV equation on a periodic domain."""
+def make_fw_solver( N, dx, alpha, beta, dt, dealias=False):
+    """Use the Fornberg & Whitham scheme to solve the forced KdV equation on a periodic domain.
+    If dealias is True, the 2/3 rule is applied to the nonlinear term to remove aliasing errors."""
 
     k = 2 * np.pi * np.fft.rfftfreq(N, d=dx)
+    mask = _two_thirds_mask(k) if dealias else None
 
     def solver(prev_sol, curr_sol, f):
 
+        curr_spec = rfft(curr_sol)
+        nonlinear_spec = curr_spec * mask if mask is not None else curr_spec
+        curr_sol_nonlinear = irfft(nonlinear_spec) if mask is not None else curr_sol
+
         ifft_f_ik = irfft(rfft(f) * 1j * k)
-        ifft_curr_ik = irfft(rfft(curr_sol) * 1j * k)
-        ifft_curr_ik_3 = irfft(rfft(curr_sol) * (1j ** 3) * (k ** 3))
+        ifft_curr_ik = irfft(nonlinear_spec * 1j * k)
+        ifft_curr_ik_3 = irfft(curr_spec * (1j ** 3) * (k ** 3))
 
         return  (prev_sol
-            - 2 * dt * alpha * curr_sol * ifft_curr_ik
+            - 2 * dt * alpha * curr_sol_nonlinear * ifft_curr_ik
             - 2 * dt * beta * ifft_curr_ik_3
             + dt  * ifft_f_ik)
 
@@ -42,10 +62,12 @@ def make_fw_solver( N, dx, alpha, beta, dt):
 ## Running the Simulation
 def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analytical_sol=None,
                    forcing_fn=None, stabilising_steps=10, verbose=10, solver_maker = make_ck_solver,
-                   debris_args = None):
+                   debris_args = None, dealias=False):
     """Runs the simulation for the normalized forced KdV equation using the Chan-Kerkhoven scheme. The simulation can be
      run in two modes: 'rest' for starting from rest frame, and 'analytical' starting from some exact solution for the
-     kdv equation. The function returns the solution array, time array, and mesh space."""
+     kdv equation. The function returns the solution array, time array, and mesh space.
+
+     If dealias is True, the solver's nonlinear term is de-aliased using the 2/3 rule."""
 
     def _get_next_solution(solver, previous, current, current_time):
         """Helper function to compute the next solution using the Chan-Kerkhoven scheme."""
@@ -59,7 +81,7 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
     def _stabilization(previous, current, current_time , time_step=dt):
         """Helper function to stabilize the solution for the first time step to avoid numerical instability."""
         initial = previous.copy()
-        stab_solver = solver_maker(N, dx, alpha, beta, time_step / stabilising_steps)
+        stab_solver = solver_maker(N, dx, alpha, beta, time_step / stabilising_steps, dealias=dealias)
         for _ in range(stabilising_steps):
             previous, current = current, _get_next_solution(stab_solver, previous, current, current_time)
             current_time += time_step / stabilising_steps
@@ -80,7 +102,7 @@ def run_simulation(L, N, t_initial, t_final, dt, alpha, beta, mode="rest", analy
     if debris_args is not None and debris_args[1] * t_final < L:
         print("L is too small, the forcing function will not be fully contained in the domain for the entire simulation.")
 
-    sim_solver = solver_maker( N, dx, alpha, beta, dt)
+    sim_solver = solver_maker( N, dx, alpha, beta, dt, dealias=dealias)
 
     # Calculating number steps simulation will do and pre-allocating arrays accordingly
     total_steps = int(round(abs(t_final - t_initial) / dt))
