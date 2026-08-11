@@ -1,5 +1,6 @@
 import inspect
 import os
+import subprocess
 import numpy as np
 from numpy.fft import rfft, irfft
 import matplotlib.pyplot as plt
@@ -7,6 +8,9 @@ from tqdm import tqdm
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+# Saved plots are committed automatically; set FKDV_AUTOCOMMIT_PLOTS=0 to turn this off.
+AUTO_COMMIT_PLOTS = os.environ.get("FKDV_AUTOCOMMIT_PLOTS", "1") != "0"
 
 def _two_thirds_mask(k):
     """Boolean mask over rfft wavenumbers implementing the 2/3 rule: wavenumbers above 2/3
@@ -42,6 +46,40 @@ def find_value_index(array, value):
     if value < array[0] or value > array[-1]:
         print(f"Warning: Value {value} is outside range {array[0]} to {array[-1]}. Clipping to the nearest boundary.")
     return int(np.argmin(np.abs(array - value)))
+
+def commit_plot(plot_path):
+    """Stage and commit a single saved plot. Only that one path is staged, so unrelated
+    work in progress is left untouched. Failures (no git, no repo, nothing to commit
+    because the plot is byte-identical to the committed one) are reported and ignored:
+    a simulation run should never die because of bookkeeping."""
+    plot_path = Path(plot_path)
+    try:
+        rel = plot_path.resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        print(f"Not committing {plot_path}: outside the project tree.")
+        return
+
+    def git(*args):
+        return subprocess.run(("git", *args), cwd=PROJECT_ROOT,
+                              capture_output=True, text=True)
+
+    try:
+        added = git("add", "--", rel)
+        if added.returncode != 0:
+            print(f"Could not stage {rel}: {added.stderr.strip()}")
+            return
+
+        # Empty diff against HEAD means the plot is unchanged, so there is nothing to commit.
+        if git("diff", "--cached", "--quiet", "--", rel).returncode == 0:
+            return
+
+        committed = git("commit", "-m", f"Add plot {Path(rel).name}", "--only", "--", rel)
+        if committed.returncode != 0:
+            print(f"Could not commit {rel}: {(committed.stderr or committed.stdout).strip()}")
+        else:
+            print(f"Committed {rel}")
+    except (OSError, subprocess.SubprocessError) as err:
+        print(f"Could not commit {rel}: {err}")
 
 def get_save_path(project_path, plot_name, caller_filename):
     plots_dir = _routed_dir(project_path, "plots", caller_filename)
@@ -84,8 +122,12 @@ def make_ck_solver( N, dx, alpha, beta, dt, dealias=False):
 
     def solver(prev_sol, curr_sol, f):
         """Compute the next solution using the Chan-Kerkhoven scheme."""
-        curr_spec = rfft(curr_sol)
-        nonlinear_spec = rfft(irfft(curr_spec) ** 2) if mask is not None else rfft(curr_sol ** 2)
+        if mask is None:
+            nonlinear_spec = rfft(curr_sol ** 2)
+        else:
+            # 2/3 rule: truncate before squaring so the aliases of the quadratic term land in
+            # the discarded band, then truncate again to drop the product's own high-k content.
+            nonlinear_spec = rfft(irfft(rfft(curr_sol) * mask) ** 2) * mask
         return irfft(c1 * rfft(prev_sol) - alpha * z * nonlinear_spec + z * rfft(f))
     return solver
 
@@ -272,7 +314,11 @@ def view_simulation_results(sol, time_array, x_array, time_stamp, debris_pos = F
         plots_dir, stem = get_save_path(PROJECT_ROOT, plot_name, inspect.stack()[1].filename)
         plots_dir.mkdir(parents=True, exist_ok=True)
 
-        plt.savefig(plots_dir / f"N{len(x_array)}{stem}.png", dpi='figure')
-        print(f"Plot saved as {plots_dir / f'N{N}{stem}.png'}")
+        plot_path = plots_dir / f"N{len(x_array)}{stem}.png"
+        plt.savefig(plot_path, dpi='figure')
+        print(f"Plot saved as {plot_path}")
+
+        if AUTO_COMMIT_PLOTS:
+            commit_plot(plot_path)
 
     plt.show()
