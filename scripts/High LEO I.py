@@ -23,22 +23,22 @@ plasma_prop = env.initialise_ionosphere_region(df_ionosphere,  region)
 
 #-------  Physical parameters ------------
 alpha         = 1.0051 # Nonlinearity ( 1.0051)
-beta          = 0.4925 # Dispersion (0.4925)
+beta          = 0.4925# Dispersion (0.4925)
 debris_radius = 2.5e-3
 vd            = 1.2 * plasma_prop['Ion Acoustic Velocity']
 np_potential  = None
 G             = None
 
 # -------- Simulation parameters ---------
-L         = 600
-N         = 16384
+L         = 3000
+N         = 35000
 dt        = 2e-3
 t_initial = 0
 t_final   = 1400
 
 # -------- Plotting params -----------------
 time_stamp_2d = 1400 # time stamp for the 2D plot in TU
-x_lim = None
+x_lim = [-600, 600]
 t_lim = None
 
 #======================================================================

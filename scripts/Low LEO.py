@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__name__).resolve().parent.parent
 region = "Low LEO" # INSERT REGION NAME HERE (e.g., "Low LEO", "High LEO I", "High LEO II"...)
 
 #-------  Physical parameters ------------
-alpha         = 1.0051 # Nonlinearity ( 1.0051)
+alpha         = 1.0051 # Nonlinearity (1.0051)
 beta          = 0.4925 # Dispersion (0.4925)
 debris_radius = 0.05
 vd            = None
@@ -21,15 +21,15 @@ np_potential  = None
 G             = None
 
 # -------- Simulation parameters ---------
-L         = 2000.0
-N         = 30000
+L         = 6000.0
+N         = 35000
 dt        = 2e-3
 t_initial = 0
 t_final   = 200
 
 # -------- Plotting params -----------------
-time_stamp_2d = 200 # time stamp for the 2D plot in TU
-x_lim         = None
+time_stamp_2d = 200 # time stamp for the 2D plot
+x_lim         = [-2000,2000]
 t_lim         = None
 
 if __name__ == "__main__":
