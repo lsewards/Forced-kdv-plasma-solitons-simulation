@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__name__).resolve().parent.parent
 
 # =====================================================================
 # ======= Simulation Configuration =======
-region = ' High LEO II' # INSERT REGION NAME HERE (e.g., "Low LEO", "High LEO I", "High LEO II"...)
+region = 'High LEO II' # INSERT REGION NAME HERE (e.g., "Low LEO", "High LEO I", "High LEO II"...)
 
 exact_wave_fn = None
 wave_args = None
@@ -20,18 +20,17 @@ wave_args = None
 df_ionosphere = pd.read_excel(PROJECT_ROOT / 'data' / 'Ionosphere_prop.xltx')
 plasma_prop = env.initialise_ionosphere_region(df_ionosphere,  region)
 
-
 #-------  Physical parameters ------------
 alpha         = 1.0051 # Nonlinearity ( 1.0051)
 beta          = 0.4925 # Dispersion (0.4925)
 debris_radius = 2.5e-3
-vd            = 7.26
-np_potential  = None
+vd            = None
+np_potential  = -0.96
 G             = None
 
 # -------- Simulation parameters ---------
-L         = 400
-N         = 16384
+L         = 200
+N         = 60000
 dt        = 2e-3
 t_initial = 0
 t_final   = 240
