@@ -30,8 +30,8 @@ np_potential  = None
 G             = None
 
 # -------- Simulation parameters ---------
-L         = 3000
-N         = 35000
+L         = 10000
+N         = 50000
 dt        = 2e-3
 t_initial = 0
 t_final   = 1400
