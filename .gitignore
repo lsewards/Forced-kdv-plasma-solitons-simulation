@@ -1,2 +1,6 @@
 /.claude
 
+/scripts/checkpoints/
+/tests/checkpoints/
+/checkpoints/
+__pycache__/

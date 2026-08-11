@@ -44,6 +44,13 @@ if __name__ == "__main__":
                                                               verbose=1000,
                                                               solver_maker=sim.make_ck_solver
     )
+    sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
+                                time_stamp=time_stamp_2d,
+                                debris_pos=display_debris_pos,
+                                view=view,
+                                x_lim=x_lim,
+                                t_lim=t_lim
+    )
     sim_sol, sim_time_array, sim_x_array = sim.slice_array(sim_sol, sim_time_array, sim_x_array,
                                                            x_lim=x_lim,
                                                            t_lim=t_lim

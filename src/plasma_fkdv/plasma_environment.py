@@ -32,19 +32,20 @@ def forcing_space_debris(np_potential, vd, G, x, time):
         Parameters: X IS XI AND TIME IS TAU
         Returns: Forcing term as a numpy array
     """
-    return np_potential * np.exp(-1 * (((x - vd * time ) / G) ** 2))
+    return np_potential * np.exp(-1 * (((x - (vd * time)) / G) ** 2))
 
-def predict_soliton_type(vd_norm, vi, alpha, beta, np_potential, G):
+def predict_soliton_type(vd_ratio, alpha, beta, np_potential, G):
 
     A = abs(np_potential) * G * np.sqrt(np.pi)  # area of the gaussian forcing disturbance
-    c0 = ( (3 * (alpha/2)**2 * A**2) / 16 * beta ) ** 1/3
+    inner = (3 * (alpha/2)**2 * A**2) / (16 * beta)
+    c0 = np.sign(inner) * abs(inner) ** (1/3)
 
-    v_sup = (1 + c0) / vi
-    v_sub = (1 - c0) / vi
+    v_sup = (1 + c0)
+    v_sub = (1 - c0)
 
-    if vd_norm < v_sub:
+    if vd_ratio < v_sub:
         return "Subsonic"
-    elif v_sub < vd_norm < v_sup:
+    elif v_sub < vd_ratio < v_sup:
         return "Transonic"
     else:
         return "Supersonic"
@@ -74,6 +75,6 @@ def get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, 
         np_potential = normalized_plasma_potential(debris_radius, debye_length_m, mass_ratio)
         print(f'Calculated normalized plasma potential: {np_potential}')
 
-    vd_norm = vd / vi_km_s  # Normalised debris velocity
+    vd_ratio = vd / vi_km_s# Normalised debris velocity
 
-    return [np_potential, vd_norm, G] , TU, vd_norm
+    return [np_potential, vd_ratio - 1, G] , TU, vd_ratio
