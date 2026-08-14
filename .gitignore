@@ -3,6 +3,7 @@
 /scripts/checkpoints/
 /tests/checkpoints/
 /checkpoints/
+plots/
 __pycache__/
 *.egg-info/
 build/
