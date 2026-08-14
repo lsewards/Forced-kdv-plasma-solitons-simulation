@@ -2,12 +2,10 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.plasma_fkdv import fkdv_simulation as sim
-from src.plasma_fkdv import plasma_environment as env
+from plasma_fkdv.utils import find_project_root
+from plasma_fkdv import fkdv_sim as sim
+from plasma_fkdv import plasma_env as env
 from functools import partial
-from pathlib import Path
-
-PROJECT_ROOT = Path(__name__).resolve().parent.parent
 
 # ======= Simulation Configuration =======
 region = "Low LEO" # INSERT REGION NAME HERE (e.g., "Low LEO", "High LEO I", "High LEO II"...)
@@ -35,7 +33,7 @@ t_lim         = None
 if __name__ == "__main__":
 
     # Initializes the conditions for the region in question and sets the ion mass and mass ratio based on the ion species
-    df_ionosphere = pd.read_excel(PROJECT_ROOT / 'data' / 'Ionosphere_prop.xltx')
+    df_ionosphere = pd.read_excel(find_project_root() / 'data' / 'Ionosphere_prop.xltx')
     plasma_prop = env.initialise_ionosphere_region(df_ionosphere, region)
 
 
@@ -52,12 +50,11 @@ if __name__ == "__main__":
                                                               stabilising_steps=100,
                                                               verbose=1000,
                                                               solver_maker=sim.make_ck_solver,
-                                                              debris_args=forcing_args,
-                                                              checkpoint_every=1e10
+                                                              debris_args=forcing_args
     )
+
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
-                                debris_pos=True,
                                 vd_norm = forcing_args[1],
                                 x_lim=x_lim,
                                 t_lim=t_lim,

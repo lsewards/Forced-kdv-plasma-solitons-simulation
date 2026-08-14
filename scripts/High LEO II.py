@@ -2,12 +2,12 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.plasma_fkdv import fkdv_simulation as sim
-from src.plasma_fkdv import plasma_environment as env
+from plasma_fkdv import fkdv_sim as sim
+from plasma_fkdv import plasma_env as env
 from functools import partial
 from pathlib import Path
 
-PROJECT_ROOT = Path(__name__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # =====================================================================
 # ======= Simulation Configuration =======
@@ -62,12 +62,11 @@ if __name__ == "__main__":
     )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
-                                debris_pos=True,
                                 vd_norm = forcing_args[1],
                                 x_lim=x_lim,
                                 t_lim=t_lim,
-                                plot_name=f"_{region.replace(' ', '_')}_a_{debris_radius}_np_potential_{np_potential}.png"
+                                plot_name=f"{region.replace(' ', '_')}_N{len(sim_x_array)}_a_{debris_radius}"
+                                          f"_np_potential_{forcing_args[-1]}.png"
     )
-
     print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')
     print(f'Minimum amplitude of the wave: {np.min(sim_sol)}')
