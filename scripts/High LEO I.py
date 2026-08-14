@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from plasma_fkdv import fkdv_sim as sim
 from plasma_fkdv import plasma_env as env
+from plasma_fkdv import find_project_root
 from functools import partial
 
 # ======= Simulation Configuration =======
@@ -13,7 +14,7 @@ exact_wave_fn = None
 wave_args = None
 
 # Initializes the conditions for the region in question and sets the ion mass and mass ratio based on the ion species
-df_ionosphere = pd.read_excel(env.find_project_root() / 'data' / 'Ionosphere_prop.xltx')
+df_ionosphere = pd.read_excel(find_project_root() / 'data' / 'Ionosphere_prop.xltx')
 plasma_prop = env.initialise_ionosphere_region(df_ionosphere,  region)
 
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     forcing_args, TU, vd_ratio = env.get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, G)
     loaded_forcing_fn = partial(env.forcing_space_debris, *forcing_args)
 
-    soliton_type = env.predict_soliton_type(vd_ratio, alpha, beta, forcing_args[0], forcing_args[2])
+    soliton_type = env.predict_soliton_type(vd_ratio, alpha, beta, forcing_args.np_potential, forcing_args.G)
     print(f"Predicted soliton type: {soliton_type} (vd_ratio = {vd_ratio:.3f})")
 
 
@@ -59,10 +60,11 @@ if __name__ == "__main__":
     )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
-                                vd_norm = forcing_args[1],
+                                vd_norm = forcing_args.vd_norm,
                                 x_lim=x_lim,
                                 t_lim=t_lim,
-                                plot_name=f"_{region.replace(' ', '_')}_a_{debris_radius}_np_potential_{np_potential}.png"
+                                plot_name=f"{region.replace(' ', '_')}_N{len(sim_x_array)}_a_{debris_radius}"
+                                          f"_np_potential_{forcing_args.np_potential:.2f}.png"
     )
 
     print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')

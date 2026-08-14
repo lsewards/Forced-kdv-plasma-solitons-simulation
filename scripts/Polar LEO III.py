@@ -41,7 +41,7 @@ if __name__ == "__main__":
     debris_args, TU, vd_ratio = env.get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, G)
     loaded_forcing_fn = partial(env.forcing_space_debris, *debris_args)
 
-    soliton_type = env.predict_soliton_type(vd_ratio, alpha, beta, debris_args[0], debris_args[2])
+    soliton_type = env.predict_soliton_type(vd_ratio, alpha, beta, debris_args.np_potential, debris_args.G)
     print(f"Predicted soliton type: {soliton_type} (vd_ratio = {vd_ratio:.3f})")
 
     sim_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, t_initial, t_final, dt, alpha, beta,
@@ -58,7 +58,8 @@ if __name__ == "__main__":
                                 vd_norm = debris_args.vd_norm,
                                 x_lim=x_lim,
                                 t_lim=t_lim,
-                                plot_name=f"_{region.replace(' ', '_')}_a_{debris_radius}_np_potential_{np_potential}.png"
+                                plot_name=f"{region.replace(' ', '_')}_N{len(sim_x_array)}_a_{debris_radius}"
+                                          f"_np_potential_{debris_args.np_potential:.2f}.png"
     )
 
     print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')
