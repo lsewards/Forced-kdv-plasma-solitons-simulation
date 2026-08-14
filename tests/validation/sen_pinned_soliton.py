@@ -1,42 +1,38 @@
 ## Imports & variables
-import numpy as np
+from plasma_fkdv import exact_solutions as  exact
+from plasma_fkdv import fkdv_sim as sim
+from plasma_fkdv.utils import find_value_index, find_project_root
 import matplotlib.pyplot as plt
-from src.plasma_fkdv import fkdv_simulation as sim
-from src.plasma_fkdv import exact_solutions as exact
 from functools import partial
-
-from src.plasma_fkdv.fkdv_simulation import find_value_index
+import numpy as np
 
 #-------  Physical parameters ------------
 alpha = 1  # Nonlinearity ( 1.0051)
 beta = 1 / 2  # Dispersion (0.4925)
+A = 20
+G = 1/2
 
 # -------- Simulation parameters ---------
 L = 60.0
 N = 2024
 dt = 1e-4
-
 t_initial = 0
 t_final = 4
 
-exact_wave_fn = exact.sen_wave_exact
-forcing_fn = exact.sen_forcing_exact
-
-wave_args = [20, 1 / 2]
-forcing_args = [20, 1 / 2]
-
 # -------- Plotting params -----------------
 time_stamp_2d = 1  # time stamp for the 2D plot in TU
-view = [23, -110, 0]  # 3D plot view angles
+view = None # 3D plot view angles
 x_lim = [13, 19]
 t_lim = None
 
 if __name__ == "__main__":
 
-    loaded_forcing_fn = partial(forcing_fn, *forcing_args)
-    loaded_wave_exact = partial(exact_wave_fn, *wave_args)
+    wave_args, forcing_args = [A, G], [A, G]
 
-    # Run the simulation and view results
+    loaded_forcing_fn = partial(exact.sen_forcing_exact, *forcing_args)
+    loaded_wave_exact = partial(exact.sen_wave_exact, *wave_args)
+
+    # Run the simulation and compare the numerical solution with the analytical solution at a specific time stamp
     sim_sol, sim_time_array, sim_x_array = sim.run_simulation(L, N, t_initial, t_final, dt, alpha, beta,
                                                               mode="analytical",
                                                               forcing_fn=loaded_forcing_fn,
@@ -44,15 +40,12 @@ if __name__ == "__main__":
                                                               verbose=100,
                                                               solver_maker=sim.make_ck_solver
     )
-
     sim_sol, _, sim_x_array = sim.slice_array(sim_sol, sim_time_array, sim_x_array, x_lim=x_lim, t_lim=t_lim)
 
-    # comapre the numerical solution with the analytical solution at a specific time stamp
-
-    i = sim.find_value_index(sim_time_array, time_stamp_2d)
-
+    i = find_value_index(sim_time_array, time_stamp_2d)
     real_sol = loaded_wave_exact(sim_x_array, sim_time_array[i])
 
+    # Plot the difference between the numerical and analytical solutions at the specified time stamp
     plt.figure(figsize=(10, 6))
     plt.plot(sim_x_array, (real_sol - sim_sol[i]), color='blue')
     plt.title(f"Comparison of Numerical and Analytical Solutions at {time_stamp_2d} TU")
@@ -65,7 +58,7 @@ if __name__ == "__main__":
     print(f"The Absolute Error : {np.max(np.abs(real_sol - sim_sol[i]))}")
     print(f"The Relative Error : {np.max(np.abs(real_sol - sim_sol[i])) / np.max(np.abs(real_sol))}")
 
-    # time evolution
+    # Plot the evolution of the solution over 15 seconds on the same graph biased in y
     times = [0, 0.1, 0.2, 0.3]
     dashed = ['-', '--', '-.', ':']
     fig, ax1 = plt.subplots(figsize=(10, 8))
