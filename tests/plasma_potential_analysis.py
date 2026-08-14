@@ -5,7 +5,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.plasma_fkdv.plasma_environment import normalised_plasma_potential, __me__, __mh__, __mo__
+from plasma_fkdv.plasma_env import normalised_plasma_potential, __me__, __mh__, __mo__
 
 debye_length = 1  # Example value for debye radius
 
