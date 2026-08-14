@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.optimize import brentq
+from collections import namedtuple
 from .constants import __me__, __mh__, __mo__
+
+ForcingArgs = namedtuple('ForcingArgs', ['np_potential', 'vd_norm', 'G'])
 
 def initialise_ionosphere_region(df, region):
     """ takes a dataframe of ionospheric properties and pulls the associated properties for a given region.
@@ -12,7 +15,7 @@ def initialise_ionosphere_region(df, region):
 
     return dict(zip(properties, value))   # Creates a dictionary of the properties and values for the given region
 
-def normalized_plasma_potential(a, debye_length, mass_ratio, potential_radius=None):
+def normalised_plasma_potential(a, debye_length, mass_ratio, potential_radius=None):
     """Calculates normalized plasma potential; ``a`` and ``debye_length`` must use the same length unit."""
     def _eqn_surface_potential(x, mass_ratio, s, a):
         """Equation 32 from the NASA paper in the form 0 = f(x) where f(x) is equal to g(x) - A(1-B * e(Cx), this equation is then put through brents method to identify the roots of the function, eφ/kT"""
@@ -72,9 +75,9 @@ def get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, 
         else:
             raise ValueError("Ion species not recognised. Please use 'O' for Oxygen or 'H' for Hydrogen.")
 
-        np_potential = normalized_plasma_potential(debris_radius, debye_length_m, mass_ratio)
+        np_potential = normalised_plasma_potential(debris_radius, debye_length_m, mass_ratio)
         print(f'Calculated normalized plasma potential: {np_potential}')
 
     vd_ratio = vd / vi_km_s# Normalised debris velocity
 
-    return [np_potential, vd_ratio - 1, G] , TU, vd_ratio
+    return ForcingArgs(np_potential, vd_ratio - 1, G), TU, vd_ratio

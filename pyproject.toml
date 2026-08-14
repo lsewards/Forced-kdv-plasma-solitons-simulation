@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plasma-fkdv"
+version = "0.1.0"
+description = "Forced KdV modelling of ion-acoustic wakes from small orbital debris"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+    "tqdm>=4.65",
+    "openpyxl>=3.1",   # pandas needs this to read data/Ionosphere_prop.xltx
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
