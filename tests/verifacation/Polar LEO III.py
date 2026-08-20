@@ -51,7 +51,6 @@ if __name__ == "__main__":
                                                               verbose=1000,
                                                               solver_maker=sim.make_ck_solver,
                                                               debris_args=debris_args,
-                                                              checkpoint_every=20000
     )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
