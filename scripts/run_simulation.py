@@ -31,16 +31,16 @@ view          = None # 3D plot view angles
 x_lim         = None
 t_lim         = None
 
-if __file__ == "__main__":
+if __name__ == "__main__":
 
     # Initializes the conditions for the region in question and sets the ion mass and mass ratio based on the ion species
     df_ionosphere = pd.read_excel( find_project_root()/ 'data' / 'Ionosphere_prop.xltx')
     plasma_prop = env.initialise_ionosphere_region(df_ionosphere, region)
 
-    forcing, TU, vd_ratio = env.get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, G)
-    loaded_forcing_fn = partial(env.forcing_space_debris, *forcing)
+    debris_arg, TU, vd_ratio = env.get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, G)
+    loaded_forcing_fn = partial(env.forcing_space_debris, *debris_arg)
 
-    soliton_type = env.predict_soliton_type(vd_ratio, alpha, beta, forcing.np_potential, forcing.G)
+    soliton_type = env.predict_soliton_type(vd_ratio, alpha, beta, debris_arg.np_potential, debris_arg.G)
     print(f"Predicted soliton type: {soliton_type} (vd_ratio = {vd_ratio:.3f})")
 
     # Run the simulation and view results
@@ -50,16 +50,16 @@ if __file__ == "__main__":
                                                               stabilising_steps=10,
                                                               verbose=1000,
                                                               solver_maker=sim.make_ck_solver,
-                                                              debris_args=forcing,
-                                                              checkpoint_every=20000
+                                                              debris_args=debris_arg,
     )
     sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
                                 time_stamp= time_stamp_2d,
-                                vd_norm = forcing.vd_norm,
+                                vd_norm = debris_arg.vd_norm,
                                 view=view,
                                 x_lim=x_lim,
                                 t_lim=t_lim,
-                                plot_name=f"_{region.replace(' ', '_')}_a_{debris_radius}_np_potential_{np_potential}.png"
+                                plot_name=f"{region.replace(' ', '_')}_N{len(sim_x_array)}_a_{debris_radius}"
+                                          f"_np_potential_{debris_arg.np_potential}.png"
     )
 
     print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')

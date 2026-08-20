@@ -18,16 +18,14 @@ def initialise_ionosphere_region(df, region):
 def normalised_plasma_potential(a, debye_length, mass_ratio, potential_radius=None):
     """Calculates normalized plasma potential; ``a`` and ``debye_length`` must use the same length unit."""
     def _eqn_surface_potential(x, mass_ratio, s, a):
-        """Equation 32 from the NASA paper in the form 0 = f(x) where f(x) is equal to g(x) - A(1-B * e(Cx), this equation is then put through brents method to identify the roots of the function, eφ/kT"""
+        """Equation 32 from the NASA paper in the form 0 = f(x) where f(x) is equal to g(x) - A(1-B * e(Cx), this
+        equation is then put through brents method to identify the roots of the function, eφ/kT"""
         return np.exp(x) - np.sqrt(mass_ratio) * (s / a) ** 2 * (1 - ((s ** 2 - a ** 2) / s ** 2) * np.exp((a ** 2 / (s ** 2 - a ** 2)) * x))
 
-    # If potential_radius is not provided, it defaults to the debye_length.
-    if potential_radius is None:
+    if potential_radius is None: # If potential_radius is not provided, it defaults to the debye_length.
         potential_radius = debye_length
 
-    s = a + debye_length
-    x_sol = brentq(_eqn_surface_potential, -10, 0, args=(mass_ratio, s, a))
-
+    x_sol = brentq(_eqn_surface_potential, -10, 0, args=(mass_ratio, (a + debye_length), a))
     return  x_sol * np.exp(-potential_radius / debye_length)
 
 def forcing_space_debris(np_potential, vd, G, x, time):
@@ -38,6 +36,10 @@ def forcing_space_debris(np_potential, vd, G, x, time):
     return np_potential * np.exp(-1 * (((x - (vd * time)) / G) ** 2))
 
 def predict_soliton_type(vd_ratio, alpha, beta, np_potential, G):
+    """ Predicts the soliton type based on the normalized debris velocity ratio, nonlinearity, dispersion,
+        normalized plasma potential, and normalized forcing width.
+        Returns: A string indicating the soliton type: "Subsonic", "Transonic", or "Supersonic".
+    """
 
     A = abs(np_potential) * G * np.sqrt(np.pi)  # area of the gaussian forcing disturbance
     inner = (3 * (alpha/2)**2 * A**2) / (16 * beta)
@@ -52,7 +54,7 @@ def predict_soliton_type(vd_ratio, alpha, beta, np_potential, G):
         return "Transonic"
     else:
         return "Supersonic"
-   
+
 def get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, G):
     """ Returns a list of pre-defined parameters for the forcing term calculation."""
 
@@ -79,5 +81,4 @@ def get_forcing_space_debris_args(plasma_prop, debris_radius, np_potential, vd, 
         print(f'Calculated normalized plasma potential: {np_potential}')
 
     vd_ratio = vd / vi_km_s# Normalised debris velocity
-
     return ForcingArgs(np_potential, vd_ratio - 1, G), TU, vd_ratio
