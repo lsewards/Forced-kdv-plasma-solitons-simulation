@@ -1,0 +1,45 @@
+# configs/regions.toml
+
+[defaults]
+alpha = 1.0051
+beta  = 0.4925
+dt    = 2e-3
+t_initial = 0
+stabilising_steps = 10
+sheet = "Equatorial"
+
+[low_leo]
+region = "Low LEO"
+a = 0.05
+L = 6000
+N = 35000
+t_final = 200
+x_lim = [-2000,2000]
+time_stamp_2d = 200
+
+[high_leo_i]
+region = "High LEO I"
+a = 2.5e-3
+vd_mult = 1.2
+L = 10000
+N = 50000
+t_final = 1400
+x_lim = [-600, 600]
+
+[high_leo_ii]
+region = "High LEO II"
+a = 2.5e-3
+vd_mult = 1.2
+L = 10000
+N = 50000
+t_final = 1400
+x_lim = [-600, 600]
+
+[polar_leo_iii]
+region = "Polar LEO III"
+sheet = "Polar"
+a = 5e-3
+L = 800
+N = 100000
+t_final = 30
+time_stamp_2d = 10
