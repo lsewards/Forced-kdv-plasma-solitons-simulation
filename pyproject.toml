@@ -7,6 +7,7 @@ name = "plasma-fkdv"
 version = "0.1.0"
 description = "Forced KdV modelling of ion-acoustic wakes from small orbital debris"
 requires-python = ">=3.10"
+license = { text = "MIT" }
 dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",

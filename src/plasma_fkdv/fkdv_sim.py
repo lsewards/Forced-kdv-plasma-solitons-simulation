@@ -169,6 +169,8 @@ def view_simulation_results(sol, time_array, x_array, time_stamp, vd_norm = None
         sol, time_array, x_array = slice_array(sol, time_array, x_array, x_lim=x_lim, t_lim=t_lim)
     if view is None:
         view = [23, -110, 0]
+    if time_stamp is None:
+        time_stamp = time_array[-1]
 
     t_index = find_value_index(time_array, time_stamp)
 

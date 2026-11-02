@@ -21,3 +21,12 @@ time if its the first iteration which on long simulations can cause signfificant
 - The code could be better generallised as at the minute it relies on specific sintax and variable names which makes it
 difficult to adapt to other similar problems. A more generalised code would allow for easier adaptation to other problems 
 in the future.
+
+## References
+
+The papers this work builds on are listed in [docs/REFERENCES.md](docs/REFERENCES.md).
+
+## License
+
+This project is released under the [MIT License](LICENSE). If you use this code in academic work, please cite this
+repository.

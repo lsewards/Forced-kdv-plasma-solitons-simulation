@@ -8,3 +8,16 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# IDE / tooling
+.idea/
+.vscode/
+.pytest_cache/
+*.pyc
+.venv/
+venv/
+
+# Copyrighted journal papers (kept locally only; see docs/REFERENCES.md)
+docs/Sen et al. - 2015*.pdf
+docs/Wu - 1987*.pdf
+docs/Zhao_Jun-Xiao_2009*.pdf

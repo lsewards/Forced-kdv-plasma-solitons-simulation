@@ -47,7 +47,8 @@ def load_config(name, **overrides):
     return RegionConfig(**merged)
 
 
-def run_region(name, **overrides):
+
+def run_region(name, view_results=False, **overrides):
 
     config = load_config(name, **overrides)
 
@@ -75,15 +76,19 @@ def run_region(name, **overrides):
                                                               solver_maker=sim.make_ck_solver,
                                                               debris_args=debris_arg,
                                                               )
-    sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
-                                time_stamp=config.time_stamp_2d,
-                                vd_norm=debris_arg.vd_norm,
-                                view=config.view,
-                                x_lim=config.x_lim,
-                                t_lim=config.t_lim,
-                                plot_name=f"{config.region.replace(' ', '_')}_N{len(sim_x_array)}_a_{config.a}"
-                                          f"_np_potential_{debris_arg.np_potential}.png"
-                                )
 
-    print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')
-    print(f'Minimum amplitude of the wave: {np.min(sim_sol)}')
+    if view_results == True:
+        sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
+                                    time_stamp=config.time_stamp_2d,
+                                    vd_norm=debris_arg.vd_norm,
+                                    view=config.view,
+                                    x_lim=config.x_lim,
+                                    t_lim=config.t_lim,
+                                    plot_name=f"{config.region.replace(' ', '_')}_N{len(sim_x_array)}_a_{config.a}"
+                                              f"_np_potential_{debris_arg.np_potential}.png"
+                                    )
+
+        print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')
+        print(f'Minimum amplitude of the wave: {np.min(sim_sol)}')
+
+    return sim_sol, sim_time_array, sim_x_array
