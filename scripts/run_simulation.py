@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 # ======= Simulation Configuration =======
-region = "Low LEO"  # INSERT REGION NAME HERE (e.g., "Low LEO", "High LEO I", "High LEO II"...)...)
+region = "High LEO I"  # INSERT REGION NAME HERE (e.g., "Low LEO", "High LEO I", "High LEO II"...)
 
 #-------  Physical parameters ------------
 alpha         = 1.0051 # Nonlinearity ( 1.0051)
@@ -64,3 +64,9 @@ if __name__ == "__main__":
 
     print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')
     print(f'Minimum amplitude of the wave: {np.min(sim_sol)}')
+
+    ani = sim.generate_animated_plot(sim_sol, sim_time_array, sim_x_array,
+                                     vd_norm=debris_arg.vd_norm,
+                                     plot_name=f"{region.replace(' ', '_')}_N{len(sim_x_array)}_a_{debris_radius}"
+                                               f"_np_potential_{debris_arg.np_potential}.gif"
+    )

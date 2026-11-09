@@ -1,10 +1,14 @@
 import inspect
 import os
+from pathlib import Path
 import numpy as np
 from scipy.fft import rfft, irfft, rfftfreq
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from .utils import find_project_root, slice_array, get_save_path, find_value_index, _routed_dir, _safe_filename_stem
+from matplotlib.animation import FuncAnimation
+
+ANIMATION_SUFFIXES = {".gif", ".mp4", ".mov", ".avi", ".webm", ".mkv"}
 
 def make_ck_solver( N, dx, alpha, beta, dt):
     """Use the Chan-Kerkhoven scheme to solve the forced KdV equation on a periodic domain."""
@@ -207,3 +211,64 @@ def view_simulation_results(sol, time_array, x_array, time_stamp, vd_norm = None
         print(f"Plot saved as {plot_path}")
 
     plt.show()
+
+def generate_animated_plot(sim_sol, sim_time_array, sim_x_array,
+                           vd_norm = None, plot_name = None,
+                           frame_stride = 1, fps = 30, writer = None):
+    """Animates the solution over time, saving it next to the static plots when plot_name is given.
+
+    The extension of plot_name picks the format: '.gif' (also the default when the name carries no
+    recognised extension) is written with Pillow, any other one is handed to ffmpeg. Returns the
+    FuncAnimation, which the caller must keep a reference to for as long as the figure is open."""
+
+    frames = range(0, len(sim_time_array), max(1, int(frame_stride)))
+
+    fig, ax = plt.subplots()
+    line, = ax.plot(sim_x_array, sim_sol[0])
+    ax.set_xlim(sim_x_array[0], sim_x_array[-1])
+    ax.set_ylim(np.min(sim_sol), np.max(sim_sol))
+    ax.set_xlabel('x axis')
+    ax.set_ylabel('U axis')
+    ax.grid()
+
+    # The debris marker is created once and only moved in update(); creating it inside update()
+    # leaves one extra line on the axes per frame.
+    debris_line = None
+    if vd_norm is not None:
+        debris_line = ax.axvline(sim_time_array[0], color='red', linestyle='--', linewidth=1, label="Debris position")
+        ax.legend(loc='upper right')
+
+    def update(frame):
+        line.set_ydata(sim_sol[frame])
+        ax.set_title(f'Simulation at t={sim_time_array[frame]:.2f} TU')
+        if debris_line is None:
+            return line,
+        x_debris = sim_time_array[0] + (vd_norm * sim_time_array[frame])
+        debris_line.set_xdata([x_debris, x_debris])
+        return line, debris_line
+
+    # blit=False so that the title, which is not a blittable artist, also updates on screen
+    ani = FuncAnimation(fig, update, frames=frames, blit=False)
+
+    if plot_name is not None:
+        plots_dir, _ = get_save_path(find_project_root(), plot_name, inspect.stack()[1].filename)
+        plots_dir.mkdir(parents=True, exist_ok=True)
+
+        # Plot names carry decimal points (e.g. "a_0.5"), so only a recognised extension counts
+        # as one; anything else is part of the stem.
+        suffix = Path(plot_name).suffix.lower()
+        if suffix in ANIMATION_SUFFIXES:
+            stem = plot_name[:-len(suffix)]
+        else:
+            suffix, stem = ".gif", plot_name
+
+        plot_path = plots_dir / f"{stem}{suffix}"
+        if writer is None:
+            writer = 'pillow' if suffix == ".gif" else 'ffmpeg'
+
+        print(f"Saving {len(frames)}-frame animation to {plot_path} with the {writer} writer...")
+        ani.save(plot_path, writer=writer, fps=fps)
+        print(f"Animation saved as {plot_path}")
+
+    plt.show()
+    return ani
