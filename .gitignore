@@ -1,6 +1,9 @@
 /.claude
 
 /scripts/checkpoints/
+crash_dumps/
+scripts/crash_dumps/
+scripts/plots/
 /tests/checkpoints/
 /checkpoints/
 plots/

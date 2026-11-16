@@ -1,6 +1,10 @@
 # One Dimensional Numerical Simulation of Solitons induced by charge space debris in plasma enviroment.
  
-__written by Lewis Sewards (100888025+lsewards@users.noreply.github.com)__
+__written by Lewis Sewards as part of the EPSRC Vacation intership attended at the Univeristy of Liverpool__
+
+## AI Declaration
+
+In the development of this code, I used claude GenAI for Coding support and proofreading. However, I critically evaluated all outputs and remain responsible for the submitted work
 
 ## Introduction
 

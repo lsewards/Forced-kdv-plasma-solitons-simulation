@@ -48,7 +48,8 @@ def load_config(name, **overrides):
 
 
 
-def run_region(name, view_results=False, **overrides):
+
+def run_region(name, view_results=False, animate_results= False, **overrides):
 
     config = load_config(name, **overrides)
 
@@ -75,7 +76,7 @@ def run_region(name, view_results=False, **overrides):
                                                               verbose=1000,
                                                               solver_maker=sim.make_ck_solver,
                                                               debris_args=debris_arg,
-                                                              )
+    )
 
     if view_results == True:
         sim.view_simulation_results(sim_sol, sim_time_array, sim_x_array,
@@ -90,5 +91,12 @@ def run_region(name, view_results=False, **overrides):
 
         print(f'Maximum amplitude of the wave: {np.max(sim_sol)}')
         print(f'Minimum amplitude of the wave: {np.min(sim_sol)}')
+
+    if animate_results == True:
+        ani = sim.generate_animated_plot(sim_sol, sim_time_array, sim_x_array,
+                                         vd_norm=debris_arg.vd_norm,
+                                         plot_name=f"{config.region.replace(' ', '_')}_N{len(sim_x_array)}_a_{config.a}"
+                                                   f"_np_potential_{debris_arg.np_potential}.gif"
+                                         )
 
     return sim_sol, sim_time_array, sim_x_array

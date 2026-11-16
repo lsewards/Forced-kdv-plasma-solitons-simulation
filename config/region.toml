@@ -1,5 +1,4 @@
-# configs/regions.toml
-
+# Region Configuration
 [defaults]
 alpha = 1.0051
 beta  = 0.4925
